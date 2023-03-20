@@ -1,5 +1,6 @@
 package edgedb.internal.protocol.typedescriptor;
 
+import edgedb.internal.protocol.typedescriptor.decoder.IDataContainerFactory;
 import edgedb.internal.protocol.typedescriptor.decoder.ITypeDescriptorHolder;
 import edgedb.internal.protocol.utility.UUIDUtils;
 
@@ -28,11 +29,17 @@ public abstract class TypeDescriptor {
     protected byte[] id = new byte[Long.SIZE * 2 / Byte.SIZE];
     protected UUID uuid;
 
+    protected IDataContainerFactory data_factory;
+
     public TypeDescriptor(byte type){
         this.type = type;
     }
 
-    abstract public Object decodeData(ByteBuffer bb, int length);
+    abstract public IDataContainer decodeData(ByteBuffer bb, int length);
+
+    public byte getType(){
+        return type;
+    }
 
     public boolean parse(ByteBuffer bb){
         if(bb.remaining() > id.length) {
@@ -89,4 +96,7 @@ public abstract class TypeDescriptor {
         return desc;
     }
 
+    public void setDataContainerFactory(IDataContainerFactory factory){
+        this.data_factory = factory;
+    }
 }

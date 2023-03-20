@@ -13,7 +13,7 @@ public class ObjectShapeDescriptor extends TypeDescriptor {
     }
 
     @Override
-    public Object decodeData(ByteBuffer bb, int length) {
+    public IDataContainer decodeData(ByteBuffer bb, int length) {
         if(length <= 0 || bb.remaining() < 4 || bb.remaining() < length)
             return null;
 
@@ -27,12 +27,12 @@ public class ObjectShapeDescriptor extends TypeDescriptor {
             return null;
         }
 
-        Object[] decoded_arr = new Object[count_obj];
+        IDataContainer container = data_factory.getInstance(this);
 
         for(int i = 0; i < count_obj; i++){
             ShapeElement shape_elem = shapeElements[i];
             TypeDescriptor curr_desc = descriptor_holder.getTypeDescriptor(shape_elem.getType_pos());
-            Object data_object = null;
+            IDataContainer data_object = null;
             try {
                 int reserved = bb.getInt();
                 int element_length = bb.getInt();
@@ -41,10 +41,10 @@ public class ObjectShapeDescriptor extends TypeDescriptor {
             catch (Exception e){
                 e.printStackTrace();
             }
-            decoded_arr[i] = data_object;
+            container.addChild(data_object);
         }
 
-        return decoded_arr;
+        return container;
     }
 
     @Override

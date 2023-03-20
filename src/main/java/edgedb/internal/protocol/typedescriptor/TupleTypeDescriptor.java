@@ -13,21 +13,21 @@ public class TupleTypeDescriptor extends TypeDescriptor {
     }
 
     @Override
-    public Object decodeData(ByteBuffer bb, int length) {
+    public IDataContainer decodeData(ByteBuffer bb, int length) {
         if(length <= 0 || length > bb.remaining() || elementCount < 0)
             return null;
 
-        Object[] result_arr = new Object[elementCount];
+        IDataContainer container = data_factory.getInstance(this);
         for(int i = 0; i < elementCount; i++){
             TypeDescriptor parent_desc = descriptor_holder.getTypeDescriptor(elementTypes[i]);
             if(parent_desc != null){
                 int start_pos_bb = bb.position();
-                result_arr[i] = parent_desc.decodeData(bb, length);
+                container.addChild(parent_desc.decodeData(bb, length));
                 length -= (bb.position() - start_pos_bb);
             }
         }
 
-        return result_arr;
+        return container;
     }
 
     @Override

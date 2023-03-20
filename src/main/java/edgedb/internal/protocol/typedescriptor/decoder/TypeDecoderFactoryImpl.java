@@ -5,7 +5,7 @@ import edgedb.internal.protocol.typedescriptor.*;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
-public class TypeDecoderFactoryImpl implements TypeDecoderFactory, ITypeDescriptorHolder {
+public class TypeDecoderFactoryImpl implements TypeDecoderFactory, ITypeDescriptorHolder, IDataContainerFactory<DataContainerImpl> {
 
     public static KnownTypeDecoder scalar_type_decoder = new KnownTypeDecoder();
 
@@ -31,6 +31,7 @@ public class TypeDecoderFactoryImpl implements TypeDecoderFactory, ITypeDescript
             TypeDescriptor desc = getTypeDescriptor(bb);
             if(desc != null){
                 desc.setDescriptorHolder(this);
+                desc.setDataContainerFactory(this);
                 desc_list.add(desc_list.size(), desc);
                 if(desc instanceof ObjectShapeDescriptor)
                     root_osd = (ObjectShapeDescriptor)desc;
@@ -89,4 +90,8 @@ public class TypeDecoderFactoryImpl implements TypeDecoderFactory, ITypeDescript
         }
     }
 
+    @Override
+    public DataContainerImpl getInstance(TypeDescriptor type_descriptor) {
+        return new DataContainerImpl(type_descriptor);
+    }
 }

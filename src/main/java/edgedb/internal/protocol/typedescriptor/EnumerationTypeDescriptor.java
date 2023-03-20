@@ -11,7 +11,7 @@ public class EnumerationTypeDescriptor extends TypeDescriptor {
     }
 
     @Override
-    public Object decodeData(ByteBuffer bb, int length) {
+    public IDataContainer decodeData(ByteBuffer bb, int length) {
         if(length <= 0 || length > bb.remaining())
             return null;
 

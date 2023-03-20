@@ -14,7 +14,7 @@ public class SetTypeDescriptor extends TypeDescriptor {
     }
 
     @Override
-    public Object decodeData(ByteBuffer bb, int length) {
+    public IDataContainer decodeData(ByteBuffer bb, int length) {
         if(length <= 0 || length > bb.remaining())
             return null;
 
@@ -31,19 +31,20 @@ public class SetTypeDescriptor extends TypeDescriptor {
         int upper = bb.getInt();
         int lower = bb.getInt();
 
-        Object[] result_arr = new Object[upper - lower + 1];
-        for(int i = 0; i < result_arr.length; i++){
+        IDataContainer container = data_factory.getInstance(this);
+        int result_length = upper - lower + 1;
+        for(int i = 0; i < result_length; i++){
             int element_length = bb.getInt();
             TypeDescriptor parent_desc = descriptor_holder.getTypeDescriptor(typePosition);
             if(parent_desc != null){
-                result_arr[i] = parent_desc.decodeData(bb, element_length);
+                 container.addChild(parent_desc.decodeData(bb, element_length));
             }
             else{
                 bb.position(bb.position() + length);
             }
         }
 
-        return result_arr;
+        return container;
     }
 
     @Override

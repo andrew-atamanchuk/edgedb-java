@@ -8,6 +8,7 @@ import edgedb.exceptions.*;
 import edgedb.internal.protocol.CommandDataDescriptor;
 import edgedb.internal.protocol.DataElement;
 import edgedb.internal.protocol.DataResponse;
+import edgedb.internal.protocol.typedescriptor.IDataContainer;
 import edgedb.internal.protocol.typedescriptor.ObjectShapeDescriptor;
 import edgedb.internal.protocol.typedescriptor.ShapeElement;
 import edgedb.internal.protocol.typedescriptor.TypeDescriptor;
@@ -58,10 +59,10 @@ public class EdgeDBClientV2Test {
         EdgeDBClientV2 clientV2 = new EdgeDBClientV2(new BlockingConnection());
         String query = "select Person {id, name, last_name, profession, birth, age, best_friend}";
         //query = "select Person {id, name, best_friend :{name, last_name}, bags :{name, volume}}";
-        query = "select Person {id, name, bags :{name, volume, @ownership}} filter .name=\"Kolia-4\"";
+        //query = "select Person {id, name, bags :{name, volume, @ownership}} filter .name=\"Kolia-4\"";
 
         ConnectionParams cp = new ConnectionParams();
-        cp.setPort(10705);
+        cp.setPort(10700);
 
         try{
             IConnection connection = clientV2.getConnection(cp);
@@ -91,11 +92,11 @@ public class EdgeDBClientV2Test {
                     tdf.decodeDescriptors(bb);
                 }
 
-                ArrayList<Object> result_arr = new ArrayList<>();
+                ArrayList<IDataContainer> result_arr = new ArrayList<>();
                 for(DataResponse resp : ((ResultSetImpl) result).getDataResponses()){
                     if(resp != null && resp.getDataLength() > 0){
                         for(DataElement elem : resp.getDataElements()){
-                            log.info("DataElement: " + new String(elem.getDataElement()));
+                            //log.info("DataElement: " + new String(elem.getDataElement()));
                             ByteBuffer bb = ByteBuffer.wrap(elem.getDataElement());
 
                             TypeDescriptor root_desc = tdf.getRootTypeDescriptor();

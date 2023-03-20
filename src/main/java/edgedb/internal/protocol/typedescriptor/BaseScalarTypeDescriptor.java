@@ -32,8 +32,10 @@ public class BaseScalarTypeDescriptor extends TypeDescriptor {
     }
 
     @Override
-    public Object decodeData(ByteBuffer bb, int length) {
-        return decodeBaseScalar(bb, length, this.scalar_type);
+    public IDataContainer decodeData(ByteBuffer bb, int length) {
+        IDataContainer container = data_factory.getInstance(this);
+        container.setData(decodeBaseScalar(bb, length, this.scalar_type));
+        return container;
     }
 
     public static Object decodeBaseScalar(ByteBuffer bb, int length, BaseScalarType scalar_type){
