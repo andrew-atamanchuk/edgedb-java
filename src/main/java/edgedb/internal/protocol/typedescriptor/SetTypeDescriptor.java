@@ -18,6 +18,8 @@ public class SetTypeDescriptor extends TypeDescriptor {
         if(length <= 0 || length > bb.remaining())
             return null;
 
+        int start_pos_bb = bb.position();
+
         // Number of dimensions, currently must
         // always be 0 or 1. 0 indicates an empty set or array.
         int ndims = bb.getInt();
@@ -28,6 +30,13 @@ public class SetTypeDescriptor extends TypeDescriptor {
         if(ndims == 0)
             return null;
 
+        TypeDescriptor parent_desc = descriptor_holder.getTypeDescriptor(typePosition);
+        if(parent_desc == null) {
+            System.err.println("Error! Type descriptor not found at index: " + typePosition);
+            bb.position(start_pos_bb + length);
+            return null;
+        }
+
         int upper = bb.getInt();
         int lower = bb.getInt();
 
@@ -35,13 +44,7 @@ public class SetTypeDescriptor extends TypeDescriptor {
         int result_length = upper - lower + 1;
         for(int i = 0; i < result_length; i++){
             int element_length = bb.getInt();
-            TypeDescriptor parent_desc = descriptor_holder.getTypeDescriptor(typePosition);
-            if(parent_desc != null){
-                 container.addChild(parent_desc.decodeData(bb, element_length));
-            }
-            else{
-                bb.position(bb.position() + length);
-            }
+            container.addChild(parent_desc.decodeData(bb, element_length));
         }
 
         return container;

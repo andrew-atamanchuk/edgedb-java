@@ -19,7 +19,6 @@ public class DataContainerImpl implements IDataContainer {
         return type_descriptor.getType();
     }
 
-    @Override
     public BaseScalarType getScalarType() {
         if(getType() == TypeDescriptor.BASE_SCALAR_DESC_TYPE){
             return ((BaseScalarTypeDescriptor)type_descriptor).scalar_type;
@@ -51,11 +50,6 @@ public class DataContainerImpl implements IDataContainer {
     @Override
     public Object getData() {
         return data;
-    }
-
-    @Override
-    public IDataContainer getInstance(TypeDescriptor type_descriptor) {
-        return new DataContainerImpl(type_descriptor);
     }
 
     @Override

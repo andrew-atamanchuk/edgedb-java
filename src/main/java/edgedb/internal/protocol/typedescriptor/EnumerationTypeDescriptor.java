@@ -15,8 +15,12 @@ public class EnumerationTypeDescriptor extends TypeDescriptor {
         if(length <= 0 || length > bb.remaining())
             return null;
 
-        //TODO what needs to be done here?
-        return null;
+        IDataContainer container = data_factory.getInstance(this);
+        String value = new String(bb.array(), bb.position(), length);
+        bb.position(bb.position() + length);
+        container.setData(value);
+
+        return container;
     }
 
     @Override
