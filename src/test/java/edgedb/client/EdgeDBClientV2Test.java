@@ -22,6 +22,7 @@ import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.UUID;
 
 @Slf4j
@@ -58,7 +59,7 @@ public class EdgeDBClientV2Test {
     public void TestGranularFlow(){
         EdgeDBClientV2 clientV2 = new EdgeDBClientV2(new BlockingConnection());
         String query = "select Person {id, name, last_name, profession, birth, age, best_friend}";
-        //query = "select Person {id, name, best_friend :{name, last_name}, bags :{name, volume}}";
+        query = "select Person {name, last_name, best_friend :{name, last_name}, bags :{name, volume, @ownership, @order}}";
         //query = "select Person {id, name, bags :{name, volume, @ownership}} filter .name=\"Kolia-4\"";
 
         ConnectionParams cp = new ConnectionParams();
@@ -106,9 +107,9 @@ public class EdgeDBClientV2Test {
                 }
 
                 System.out.println("Decoded results:");
-                for (Object row : result_arr){
-                    if(row instanceof Object[])
-                        printArray((Object[]) row);
+                for (IDataContainer row : result_arr){
+                    if(row.getCountChildren() > 0)
+                        printData(row.getChildrenIterator());
                     System.out.println();
                 }
             }
@@ -118,15 +119,32 @@ public class EdgeDBClientV2Test {
         }
     }
 
+    public void printData(Iterator<IDataContainer> iterator){
+        System.out.print("[");
+        while (iterator.hasNext()){
+            IDataContainer cont = iterator.next();
+            if(cont == null)
+                continue;
+
+            if(cont.getCountChildren() > 0){
+                printData(cont.getChildrenIterator());
+            }
+            else{
+                if(cont.getData() instanceof Object[]){
+                    printArray((Object[])cont.getData());
+                }
+                else {
+                    System.out.print(cont.getData() + "; ");
+                }
+            }
+        }
+        System.out.print("]");
+    }
+
     public void printArray(Object[] arr){
         System.out.print("[");
         for(int i = 0; i < arr.length; i++){
-            if(arr[i] instanceof Object[]){
-                printArray((Object[]) arr[i]);
-            }
-            else{
-                System.out.print(arr[i] + "; ");
-            }
+            System.out.print(arr[i] + "; ");
         }
         System.out.print("]");
     }

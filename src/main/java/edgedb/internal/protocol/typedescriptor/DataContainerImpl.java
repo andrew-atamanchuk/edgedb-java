@@ -1,11 +1,13 @@
 package edgedb.internal.protocol.typedescriptor;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 public class DataContainerImpl implements IDataContainer {
     private final TypeDescriptor type_descriptor;
-    public Set<IDataContainer> children = new HashSet<>();
+    public ArrayList<IDataContainer> children = new ArrayList<>();
     public Object data;
 
     public DataContainerImpl(TypeDescriptor type_descriptor){
@@ -32,8 +34,23 @@ public class DataContainerImpl implements IDataContainer {
     }
 
     @Override
+    public Iterator<IDataContainer> getChildrenIterator() {
+        return children.iterator();
+    }
+
+    @Override
+    public int getCountChildren() {
+        return children.size();
+    }
+
+    @Override
     public void setData(Object data) {
         this.data = data;
+    }
+
+    @Override
+    public Object getData() {
+        return data;
     }
 
     @Override
