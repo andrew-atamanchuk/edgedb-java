@@ -28,6 +28,7 @@ public class BufferReaderImpl implements BufferReader {
             log.info("Total byte Received {}", byteReceived);
             return readInto;
         }catch (IOException e) {
+            e.printStackTrace();
             throw new ClientException("InternalServerError");
         }
     }

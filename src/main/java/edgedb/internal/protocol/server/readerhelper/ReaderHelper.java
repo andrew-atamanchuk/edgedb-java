@@ -44,6 +44,14 @@ public class ReaderHelper implements Read {
     }
 
     @Override
+    public long readUint64() throws IOException, OverReadException {
+        checkReadCount();
+        long value = dataInputStream.readLong();
+        currentReadCount += typeSizeHelper.getLongSize();
+        return value;
+    }
+
+    @Override
     public short readUint16() throws IOException, OverReadException {
         checkReadCount();
         short value = dataInputStream.readShort();

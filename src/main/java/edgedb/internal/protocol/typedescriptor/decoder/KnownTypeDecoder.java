@@ -5,7 +5,7 @@ import edgedb.internal.protocol.typedescriptor.*;
 
 import java.util.Arrays;
 
-public final class KnownTypeDecoder<T extends TypeDescriptor> {
+public final class KnownTypeDecoder<T extends IDescType> {
 
     public final T decode(byte[] value) throws ScalarTypeNotFoundException {
 
@@ -41,6 +41,14 @@ public final class KnownTypeDecoder<T extends TypeDescriptor> {
             return (T) BaseScalarType.DURATION;
         } else if (Arrays.equals(value, new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 15})) {
             return (T) BaseScalarType.JSON;
+        } else if (Arrays.equals(value, new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 16})) {
+            return (T) BaseScalarType.BIGINT;
+        } else if (Arrays.equals(value, new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 17})) {
+            return (T) BaseScalarType.RELATIVE_DURATION;
+        } else if (Arrays.equals(value, new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 18})) {
+            return (T) BaseScalarType.DATE_DURATION;
+        } else if (Arrays.equals(value, new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 48})) {
+            return (T) BaseScalarType.MEMORY;
         } else if (Arrays.equals(value, new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1})) {
             throw new ScalarTypeNotFoundException();
         } else if (Arrays.equals(value, new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1})) {

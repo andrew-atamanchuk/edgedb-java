@@ -45,6 +45,14 @@ public class ChannelReaderHelperImpl implements IReaderHelper {
     }
 
     @Override
+    public long readUint64() {
+        checkReadCount();
+        long value = readBuffer.getLong();
+        currentReadCount += typeSizeHelper.getByteSize();
+        return value;
+    }
+
+    @Override
     public short readUint16() {
         checkReadCount();
         short value = readBuffer.getShort();

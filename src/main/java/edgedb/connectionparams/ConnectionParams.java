@@ -2,6 +2,8 @@ package edgedb.connectionparams;
 
 import lombok.*;
 
+import java.net.URI;
+
 @Builder
 @Data
 @AllArgsConstructor
@@ -11,21 +13,21 @@ public class ConnectionParams {
     private String dsn;
 
     @NonNull
-    private String host;
-
+    private String host="127.0.0.1";
+//localhost:10701
     @NonNull
-    private Integer port;
+    private Integer port=10701;
 
     private String admin;
 
     @NonNull
-    private String user;
+    private String user="edgedb";
 
     @NonNull
     private String password;
 
     @NonNull
-    private String database;
+    private String database="edgedb";
 
     private int timeout;
 

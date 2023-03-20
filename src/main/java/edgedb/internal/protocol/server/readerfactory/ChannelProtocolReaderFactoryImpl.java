@@ -40,6 +40,8 @@ public class ChannelProtocolReaderFactoryImpl implements ProtocolReaderFactory{
                return new ServerHandshakeReaderV2(readerHelper);
             case (int) ERROR_RESPONSE:
                 return new ErrorResponseReaderV2(readerHelper);
+            case (int) COMMAND_DATA_DESCRIPTOR:
+                return new CommandDataDescriptionReaderV2(readerHelper);
         }
         return null;
     }

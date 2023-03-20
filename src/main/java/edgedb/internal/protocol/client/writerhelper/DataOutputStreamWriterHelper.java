@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.UUID;
 
 @AllArgsConstructor
 public class DataOutputStreamWriterHelper implements IWriteHelper {
@@ -11,8 +12,21 @@ public class DataOutputStreamWriterHelper implements IWriteHelper {
 
 
     @Override
+    public void writeUUID(UUID uuid) throws IOException {
+        if(uuid != null) {
+            byte[] value = IWriteHelper.asBytes(uuid);
+            dataOutputStream.write(value, 0, value.length);
+        }
+    }
+
+    @Override
     public void writeUint8(int value) throws IOException {
         dataOutputStream.writeByte(value);
+    }
+
+    @Override
+    public void writeUint64(long value) throws IOException {
+        dataOutputStream.writeLong(value);
     }
 
     @Override

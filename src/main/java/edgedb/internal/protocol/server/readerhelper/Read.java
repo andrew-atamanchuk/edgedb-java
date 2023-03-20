@@ -9,6 +9,8 @@ public interface Read {
 
     public int readUint32() throws IOException, OverReadException;
 
+    public long readUint64() throws IOException, OverReadException;
+
     public short readUint16() throws IOException, OverReadException;
 
     public String readString() throws IOException, OverReadException;

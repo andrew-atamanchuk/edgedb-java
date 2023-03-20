@@ -1,8 +1,31 @@
 package edgedb.internal.protocol.typedescriptor;
 
-public class TypeAnnotationDescriptor {
-    // 0x80..0xfe from 128-254
-    private char type;
-    private byte[] id;
+import java.nio.ByteBuffer;
+
+public class TypeAnnotationDescriptor extends TypeDescriptor {
+    //type of descriptor in range 0x80..0xfe from 128-254
+
     private String annotation;
+
+    public TypeAnnotationDescriptor(byte type){
+        super(type);
+    }
+
+    @Override
+    public Object decodeData(ByteBuffer bb, int length) {
+        return null;
+    }
+
+    @Override
+    public boolean parse(ByteBuffer bb) {
+        if(!super.parse(bb))
+            return false;
+
+        int length = bb.getInt();
+        if(length >= 0){
+            annotation = new String(bb.array(), bb.position(), length);
+            bb.position(bb.position() + length);
+        }
+        return true;
+    }
 }

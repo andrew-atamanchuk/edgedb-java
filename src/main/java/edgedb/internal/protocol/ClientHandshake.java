@@ -30,11 +30,12 @@ public class ClientHandshake implements BufferWritable, ClientProtocolBehaviour 
         // TODO: CHECK THIS LATER. ARE THESE USER PROVIDED
         majorVersion = (short) MAJOR_VERSION;
         minorVersion = (short) MINOR_VERSION;
-        connectionParamLength = (short) 2;
+        //connectionParamLength = (short) 2;
         connectionParams = new ConnectionParams[]{
                 new ConnectionParams("user", user),
                 new ConnectionParams("database", "edgedb")
         };
+        connectionParamLength = (short) connectionParams.length;
         protocolExtensionLength = (short) 0;
         messageLength = calculateMessageLength();
     }

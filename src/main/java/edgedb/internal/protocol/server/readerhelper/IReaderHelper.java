@@ -7,6 +7,8 @@ public interface IReaderHelper {
 
     public int readUint32();
 
+    public long readUint64();
+
     public short readUint16();
 
     public String readString();

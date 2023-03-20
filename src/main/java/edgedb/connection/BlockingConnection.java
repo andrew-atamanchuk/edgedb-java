@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.UUID;
 
 import static edgedb.client.ClientConstants.MAJOR_VERSION;
 import static edgedb.client.ClientConstants.MINOR_VERSION;
@@ -97,7 +98,8 @@ public class BlockingConnection implements IConnection {
 
     @Override
     public ResultSet queryJSON(String query) {
-        return executeGranularFlow(IOFormat.JSON, Cardinality.MANY, query);
+        return executeGranularFlow(IOFormat.JSON_ELEMENTS, Cardinality.MANY, query);
+        //return executeNewFlow(IOFormat.JSON, Cardinality.MANY, query);
     }
 
 
@@ -112,6 +114,9 @@ public class BlockingConnection implements IConnection {
             byte mType = readBuffer.get();
             ProtocolReader reader = new ChannelProtocolReaderFactoryImpl(readBuffer)
                     .getProtocolReader((char) mType, readBuffer);
+
+            if(reader == null)
+                continue;
 
             T response = reader.read(readBuffer);
 
@@ -150,11 +155,78 @@ public class BlockingConnection implements IConnection {
                         log.info("Not In Transaction");
                         break;
                 }
+                break;
 
             }
         }
 
         return null;
+    }
+
+    protected <T extends ServerProtocolBehaviour> CommandDataDescriptor readCommandDataDescriptor(IGranularFlowPipe granularFlowPipe, Prepare prepareMessage){
+        log.debug("Reading prepare complete");
+        BufferReader bufferReader = new BufferReaderImpl(clientChannel);
+        ByteBuffer readBuffer = SingletonBuffer.getInstance().getBuffer();
+
+        readBuffer = bufferReader.read(readBuffer);
+        CommandDataDescriptor result_cdd = null;
+
+        while (readBuffer.hasRemaining()) {
+            byte mType = readBuffer.get();
+            ProtocolReader reader = new ChannelProtocolReaderFactoryImpl(readBuffer)
+                    .getProtocolReader((char) mType, readBuffer);
+
+            if(reader == null)
+                continue;
+
+            T response = reader.read(readBuffer);
+
+            if(response instanceof  CommandDataDescriptor){
+                log.debug("Response is an Instance Of CommandDataDescriptor {}", (CommandDataDescriptor) response);
+                result_cdd = (CommandDataDescriptor) response;
+            }
+
+            /*if (response instanceof PrepareComplete) {
+                log.debug("Response is an Instance Of PrepareComplete {}", (PrepareComplete) response);
+                return (PrepareComplete) response;
+            }*/
+
+            if (response instanceof ErrorResponse) {
+                throw IExceptionFromErrorResponseBuilderImpl.getExceptionFromError((ErrorResponse) response);
+            }
+
+            if (response instanceof ServerKeyDataBehaviour) {
+                log.debug("Response is an Instance Of Error {}", (ServerKeyDataBehaviour) response);
+                ServerKeyDataBehaviour serverKeyData = (ServerKeyDataBehaviour) response;
+                this.serverKey = serverKeyData.getData();
+                continue;
+            }
+
+            if (response instanceof ReadyForCommand) {
+                log.debug("Response is an Instance Of ReadyForCommand {}", (ReadyForCommand) response);
+                ReadyForCommand readyForCommand = (ReadyForCommand) response;
+
+                switch (readyForCommand.getTransactionState()) {
+                    case (int) IN_FAILED_TRANSACTION:
+                        log.info("In Failed Transaction");
+                        //TODO: Coding to concrete implementation here. Watch out.
+                        SyncPipe syncPipe = new SyncPipeImpl(
+                                new ChannelProtocolWritableImpl(getChannel()));
+                        syncPipe.sendSyncMessage();
+                        continue;
+                    case (int) IN_TRANSACTION:
+                        log.info("In Transaction");
+                        throw new UnsupportedOperationException();
+                    case (int) NOT_IN_TRANSACTION:
+                        log.info("Not In Transaction");
+                        break;
+                }
+                break;
+
+            }
+        }
+
+        return result_cdd;
     }
 
     protected ResultSet executeGranularFlow(char IOFormat, char cardinality, String command){
@@ -163,14 +235,42 @@ public class BlockingConnection implements IConnection {
 
         Prepare prepareMessage = new Prepare(IOFormat, cardinality, command);
         granularFlowPipe.sendPrepareMessage(prepareMessage);
-        PrepareComplete prepareComplete = readPrepareComplete(granularFlowPipe, prepareMessage);
-        log.info("PrepareComplete received {}", prepareComplete);
+
+
+        CommandDataDescriptor data_descriptor = null;
+        if(MAJOR_VERSION < 1) {
+            PrepareComplete prepareComplete = readPrepareComplete(granularFlowPipe, prepareMessage);
+            log.info("PrepareComplete received {}", prepareComplete);
+        }
+        else{
+            data_descriptor = readCommandDataDescriptor(granularFlowPipe, prepareMessage);
+        }
 //        try {
 //            TypeDescriptor typeDescriptor = new TypeDecoderFactoryImpl().getTypeDescriptor(prepareComplete.getResultDataDescriptorID());
 //        }catch (ScalarTypeNotFoundException e){
 //
 //        }
-        granularFlowPipe.sendExecuteMessage(new Execute());
+        if(MAJOR_VERSION < 1) {
+            granularFlowPipe.sendExecuteMessage(new Execute());
+        }
+        else{
+            ExecuteNew exec = new ExecuteNew(IOFormat, cardinality, command);
+            exec.setInput_typedesc_id(data_descriptor.getInput_typedesc_id() == null ? new UUID(0, 0) : data_descriptor.getInput_typedesc_id());
+            exec.setOutput_typedesc_id(data_descriptor.getOutput_typedesc_id() == null ? new UUID(0, 0) : data_descriptor.getOutput_typedesc_id());
+            granularFlowPipe.sendExecuteNewMessage(exec);
+        }
+
+        ResultSet result = readDataResponse();
+        result.setCommandDataDescriptor(data_descriptor);
+        return result;
+    }
+
+    protected ResultSet executeNewFlow(char IOFormat, char cardinality, String command) {
+        IGranularFlowPipe granularFlowPipe = new GranularFlowPipeV2(
+                new ChannelProtocolWritableImpl(getChannel()));
+
+        ExecuteNew exec_message = new ExecuteNew(IOFormat, cardinality, command);
+        granularFlowPipe.sendExecuteNewMessage(exec_message);
         return readDataResponse();
     }
 
@@ -187,9 +287,14 @@ public class BlockingConnection implements IConnection {
             byte mType = readBuffer.get();
             ProtocolReader reader = new ChannelProtocolReaderFactoryImpl(readBuffer)
                     .getProtocolReader((char) mType, readBuffer);
+
+            if(reader == null)
+                continue;
+
             T response = reader.read(readBuffer);
 
-            if (response instanceof DataResponse) {
+
+            if (response != null && response instanceof DataResponse) {
                 log.debug("Response is an Instance Of DataResponse {}", (DataResponse) response);
                 dataResponse = (DataResponse) response;
 
@@ -255,7 +360,11 @@ public class BlockingConnection implements IConnection {
 
             T response = reader.read(readBuffer);
             log.info(" Response Found was {}", response.toString());
-            if (response instanceof ServerHandshakeBehaviour) {
+            if(response instanceof ErrorResponse){
+                log.debug("ErrorResponse is an Instance Of ServerHandshake {}", response);
+                System.out.println("ErrorResponse: " + response);
+            }
+            else if (response instanceof ServerHandshakeBehaviour) {
                 ServerHandshakeBehaviour serverHandshake = (ServerHandshakeBehaviour) response;
                 log.debug("Response is an Instance Of ServerHandshake {}", serverHandshake);
                 String message = String.format("Incompatible driver expected Minor Version %s and Major Version %s,found Minor Version %s and Major Version %s", MAJOR_VERSION, MINOR_VERSION, serverHandshake.getMajorVersion(), serverHandshake.getMinorVersion());

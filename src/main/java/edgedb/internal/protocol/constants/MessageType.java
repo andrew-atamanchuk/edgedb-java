@@ -16,6 +16,8 @@ public final class MessageType {
 
 
     public static final char PREPARE = 'P';
+    public static final char EXECUTE = 'O';
+    public static final char COMMAND_DATA_DESCRIPTOR = 'T';
     public static final char PREPARE_COMPLETE = '1';
 
     public static final char READY_FOR_COMMAND = 'Z';

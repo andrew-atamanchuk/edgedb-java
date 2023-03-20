@@ -1,6 +1,17 @@
 package edgedb.internal.protocol.utility;
 
+import java.nio.ByteBuffer;
+import java.util.UUID;
+
 public final class MessageLengthCalculator {
+
+    public static final int calculate(UUID value) {
+        return Long.SIZE * 2 / Byte.SIZE;
+    }
+
+    public static final int calculate(long value) {
+        return Long.SIZE / Byte.SIZE;
+    }
 
     public static final int calculate(int value) {
         return Integer.SIZE / Byte.SIZE;

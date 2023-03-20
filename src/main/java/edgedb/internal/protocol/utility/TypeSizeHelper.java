@@ -5,6 +5,7 @@ public class TypeSizeHelper {
     private static int BYTE_SIZE = Byte.SIZE / Byte.SIZE;
     private static int INT_SIZE = Integer.SIZE / Byte.SIZE;
     private static int SHORT_SIZE = Short.SIZE / Byte.SIZE;
+    private static int LONG_SIZE = Long.SIZE / Byte.SIZE;
 
     public static final int getByteSize() {
         return BYTE_SIZE;
@@ -18,4 +19,7 @@ public class TypeSizeHelper {
         return SHORT_SIZE;
     }
 
+    public static final int getLongSize() {
+        return LONG_SIZE;
+    }
 }
