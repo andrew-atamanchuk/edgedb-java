@@ -61,6 +61,7 @@ public class EdgeDBClientV2Test {
         String query = "select Person {id, name, last_name, profession, birth, age, best_friend}";
         query = "select Person {name, last_name, best_friend :{name, last_name}, bags :{name, volume, @ownership, @order}}";
         query = "select Person {name, books, color, number, bags :{name, volume, @ownership}} filter .name = 'Kolia-1'";
+        query = "select Person {name, values, metadata, tuple_of_arrays, nested_tuple, unnamed_tuple} filter .name = 'Kolia-1'";
 
         ConnectionParams cp = new ConnectionParams();
         cp.setPort(10700);
