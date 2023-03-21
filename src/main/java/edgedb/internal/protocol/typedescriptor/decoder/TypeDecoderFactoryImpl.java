@@ -1,40 +1,97 @@
 package edgedb.internal.protocol.typedescriptor.decoder;
 
+import edgedb.internal.protocol.CommandDataDescriptor;
 import edgedb.internal.protocol.typedescriptor.*;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.UUID;
 
 public class TypeDecoderFactoryImpl implements TypeDecoderFactory, ITypeDescriptorHolder, IDataContainerFactory<DataContainerImpl> {
 
     public static KnownTypeDecoder scalar_type_decoder = new KnownTypeDecoder();
 
-    private ArrayList<TypeDescriptor> desc_list = new ArrayList<>();
-    private ObjectShapeDescriptor root_osd = null;
+    UUID input_typedesc_id = null;
+    private ArrayList<TypeDescriptor> input_desc_list = new ArrayList<>();
+
+    UUID output_typedesc_id = null;
+    private ArrayList<TypeDescriptor> output_desc_list = new ArrayList<>();
+
+    private ObjectShapeDescriptor output_root_osd = null;
+    private ObjectShapeDescriptor input_root_osd = null;
 
     @Override
-    public TypeDescriptor getRootTypeDescriptor() {
-        return root_osd;
+    public TypeDescriptor getInputRootTypeDescriptor() {
+        return input_root_osd;
     }
 
     @Override
-    public TypeDescriptor getTypeDescriptor(int index) {
-        if(index < 0 || desc_list.size() <= index)
+    public TypeDescriptor getOutputRootTypeDescriptor() {
+        return output_root_osd;
+    }
+
+    @Override
+    public TypeDescriptor getInputTypeDescriptor(int index) {
+        if(index < 0 || input_desc_list.size() <= index)
             return null;
 
-        return desc_list.get(index);
+        return input_desc_list.get(index);
     }
 
     @Override
-    public boolean decodeDescriptors(ByteBuffer bb) {
+    public TypeDescriptor getOutputTypeDescriptor(int index) {
+        if(index < 0 || output_desc_list.size() <= index)
+            return null;
+
+        return output_desc_list.get(index);
+    }
+
+    @Override
+    public void setInputTypeDescId(UUID uuid){
+        this.input_typedesc_id = uuid;
+    }
+
+    @Override
+    public void setOutputTypeDescId(UUID uuid){
+        this.output_typedesc_id = uuid;
+    }
+
+    @Override
+    public UUID getInputTypeDescId(){
+        return input_typedesc_id;
+    }
+
+    @Override
+    public UUID getOutputTypeDescId(){
+        return output_typedesc_id;
+    }
+
+    public boolean decodeDescriptors(CommandDataDescriptor cdd){
+        try {
+            ByteBuffer bb = ByteBuffer.wrap(cdd.getInput_typedesc());
+            decodeInputDescriptors(bb);
+            bb = ByteBuffer.wrap(cdd.getOutput_typedesc());
+            decodeOutputDescriptors(bb);
+        }
+        catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
+        setInputTypeDescId(cdd.getInput_typedesc_id());
+        setOutputTypeDescId(cdd.getOutput_typedesc_id());
+        return true;
+    }
+
+    @Override
+    public boolean decodeInputDescriptors(ByteBuffer bb) {
         while(bb.hasRemaining()){
-            TypeDescriptor desc = getTypeDescriptor(bb);
+            TypeDescriptor desc = parseTypeDescriptor(bb);
             if(desc != null){
                 desc.setDescriptorHolder(this);
                 desc.setDataContainerFactory(this);
-                desc_list.add(desc_list.size(), desc);
+                input_desc_list.add(output_desc_list.size(), desc);
                 if(desc instanceof ObjectShapeDescriptor)
-                    root_osd = (ObjectShapeDescriptor)desc;
+                    input_root_osd = (ObjectShapeDescriptor)desc;
             }
         }
 
@@ -42,7 +99,22 @@ public class TypeDecoderFactoryImpl implements TypeDecoderFactory, ITypeDescript
     }
 
     @Override
-    public TypeDescriptor getTypeDescriptor(ByteBuffer bb) throws TypeNotPresentException {
+    public boolean decodeOutputDescriptors(ByteBuffer bb) {
+        while(bb.hasRemaining()){
+            TypeDescriptor desc = parseTypeDescriptor(bb);
+            if(desc != null){
+                desc.setDescriptorHolder(this);
+                desc.setDataContainerFactory(this);
+                output_desc_list.add(output_desc_list.size(), desc);
+                if(desc instanceof ObjectShapeDescriptor)
+                    output_root_osd = (ObjectShapeDescriptor)desc;
+            }
+        }
+
+        return true;
+    }
+
+    private TypeDescriptor parseTypeDescriptor(ByteBuffer bb) throws TypeNotPresentException {
         TypeDescriptor desc = null;
         int bb_pos = 0;
         try {
@@ -116,15 +188,15 @@ public class TypeDecoderFactoryImpl implements TypeDecoderFactory, ITypeDescript
 
         TypeDecoderFactoryImpl tdf = new TypeDecoderFactoryImpl();
         ByteBuffer bb = ByteBuffer.wrap(src_arr);
-        TypeDescriptor desc = tdf.getTypeDescriptor(bb);
+        TypeDescriptor desc = tdf.parseTypeDescriptor(bb);
         if(desc != null){
             System.out.println("Desc parsed succes: " + desc.getClass());
         }
-        desc = tdf.getTypeDescriptor(bb);
+        desc = tdf.parseTypeDescriptor(bb);
         if(desc != null){
             System.out.println("Desc parsed succes: " + desc.getClass());
         }
-        desc = tdf.getTypeDescriptor(bb);
+        desc = tdf.parseTypeDescriptor(bb);
         if(desc != null){
             System.out.println("Desc parsed succes: " + desc.getClass());
         }

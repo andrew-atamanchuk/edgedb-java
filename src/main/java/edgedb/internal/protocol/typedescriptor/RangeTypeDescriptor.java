@@ -14,10 +14,9 @@ public class RangeTypeDescriptor extends TypeDescriptor {
         if(length <= 0 || bb.remaining() < length)
             return null;
 
-        IDataContainer container = data_factory.getInstance(this);
-        TypeDescriptor type_desc = descriptor_holder.getTypeDescriptor(type_pos);
+        TypeDescriptor type_desc = descriptor_holder.getOutputTypeDescriptor(type_pos);
         if(type_desc != null) {
-            //TODO It needs to be applied correctly.
+            IDataContainer container = data_factory.getInstance(this);
             byte flags = bb.get();
 
             if((RangeFlag.LB_INC.flag & flags) > 0){

@@ -22,6 +22,7 @@ public abstract class TypeDescriptor implements IDescType {
     }
 
     abstract public IDataContainer decodeData(ByteBuffer bb, int length);
+    abstract public int encodeData(ByteBuffer bb, IDataContainer container);
 
     public byte getType(){
         return type;

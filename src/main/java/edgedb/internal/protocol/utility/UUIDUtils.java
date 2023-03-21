@@ -31,4 +31,10 @@ public class UUIDUtils {
         bb.putLong(uuid.getLeastSignificantBits());
         return bb.array();
     }
+
+    public static int convertUUIDToBB(UUID uuid, ByteBuffer bb) {
+        bb.putLong(uuid.getMostSignificantBits());
+        bb.putLong(uuid.getLeastSignificantBits());
+        return Long.SIZE * 2 / Byte.SIZE;
+    }
 }

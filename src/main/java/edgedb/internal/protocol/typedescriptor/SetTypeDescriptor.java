@@ -30,7 +30,7 @@ public class SetTypeDescriptor extends TypeDescriptor {
         if(ndims == 0)
             return null;
 
-        TypeDescriptor parent_desc = descriptor_holder.getTypeDescriptor(typePosition);
+        TypeDescriptor parent_desc = descriptor_holder.getOutputTypeDescriptor(typePosition);
         if(parent_desc == null) {
             System.err.println("Error! Type descriptor not found at index: " + typePosition);
             bb.position(start_pos_bb + length);

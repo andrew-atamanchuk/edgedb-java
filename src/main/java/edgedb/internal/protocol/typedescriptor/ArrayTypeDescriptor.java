@@ -30,7 +30,7 @@ public class ArrayTypeDescriptor extends TypeDescriptor {
         if(ndims == 0)
             return null;
 
-        TypeDescriptor parent_desc = descriptor_holder.getTypeDescriptor(type_pos);
+        TypeDescriptor parent_desc = descriptor_holder.getOutputTypeDescriptor(type_pos);
         if(parent_desc == null) {
             System.err.println("Error! Type descriptor not found at index: " + type_pos);
             bb.position(start_pos_bb + length);

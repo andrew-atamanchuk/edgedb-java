@@ -15,7 +15,7 @@ public class ScalarTypeDescriptor extends TypeDescriptor {
             return null;
 
         int start_pos_bb = bb.position();
-        TypeDescriptor parent_desc = descriptor_holder.getTypeDescriptor(baseTypePosition);
+        TypeDescriptor parent_desc = descriptor_holder.getOutputTypeDescriptor(baseTypePosition);
         if(parent_desc != null){
             return parent_desc.decodeData(bb, length);
         }

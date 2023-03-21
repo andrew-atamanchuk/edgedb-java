@@ -29,7 +29,7 @@ public class InputShapeTypeDescriptor extends TypeDescriptor {
 
         for(int i = 0; i < count_obj; i++){
             ShapeElement shape_elem = shapeElements[i];
-            TypeDescriptor curr_desc = descriptor_holder.getTypeDescriptor(shape_elem.getType_pos());
+            TypeDescriptor curr_desc = descriptor_holder.getOutputTypeDescriptor(shape_elem.getType_pos());
             IDataContainer child_contained = null;
             try {
                 int index = bb.getInt();

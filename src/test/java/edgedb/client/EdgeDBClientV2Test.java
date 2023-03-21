@@ -69,6 +69,8 @@ public class EdgeDBClientV2Test {
 //                "  values := <range<std::int64>> range(2, 10, inc_lower := true, inc_upper := true)\n" +
 //                "}\n";
 
+        query = "INSERT Bag { name := <str>$name, volume := <int32>$volume }";
+
         ConnectionParams cp = new ConnectionParams();
         cp.setPort(10705);
 
@@ -96,8 +98,7 @@ public class EdgeDBClientV2Test {
                 TypeDecoderFactoryImpl tdf = new TypeDecoderFactoryImpl();
                 CommandDataDescriptor cdd = ((ResultSetImpl) result).getDataDescriptor();
                 if(cdd != null) {
-                    ByteBuffer bb = ByteBuffer.wrap(cdd.getOutput_typedesc());
-                    tdf.decodeDescriptors(bb);
+                    tdf.decodeDescriptors(cdd);
                 }
 
                 ArrayList<IDataContainer> result_arr = new ArrayList<>();
@@ -107,7 +108,7 @@ public class EdgeDBClientV2Test {
                             //log.info("DataElement: " + new String(elem.getDataElement()));
                             ByteBuffer bb = ByteBuffer.wrap(elem.getDataElement());
 
-                            TypeDescriptor root_desc = tdf.getRootTypeDescriptor();
+                            TypeDescriptor root_desc = tdf.getOutputRootTypeDescriptor();
                             result_arr.add(root_desc.decodeData(bb, bb.remaining()));
                         }
                     }

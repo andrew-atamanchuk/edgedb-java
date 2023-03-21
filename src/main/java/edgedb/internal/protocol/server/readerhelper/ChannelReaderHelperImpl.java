@@ -98,6 +98,10 @@ public class ChannelReaderHelperImpl implements IReaderHelper {
         int length = readBuffer.getInt();
         currentReadCount += typeSizeHelper.getIntSize();
 
+        //HACK!!!!
+        if(readBuffer.limit() < readBuffer.position() + length)
+            readBuffer.limit(readBuffer.position() + length);
+
         byte[] array = new byte[length];
         readBuffer.get(array, 0, length);
         currentReadCount += length;

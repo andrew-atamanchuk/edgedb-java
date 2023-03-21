@@ -26,7 +26,7 @@ public class TupleTypeDescriptor extends TypeDescriptor {
 
         IDataContainer container = data_factory.getInstance(this);
         for(int i = 0; i < nelems; i++){
-            TypeDescriptor parent_desc = descriptor_holder.getTypeDescriptor(elementTypes[i]);
+            TypeDescriptor parent_desc = descriptor_holder.getOutputTypeDescriptor(elementTypes[i]);
             if(parent_desc != null){
                 int reserved = bb.getInt();
                 int elem_length = bb.getInt();
