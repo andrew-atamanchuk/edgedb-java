@@ -47,7 +47,7 @@ public class TypeDecoderFactoryImpl implements TypeDecoderFactory, ITypeDescript
         int bb_pos = 0;
         try {
             bb_pos = bb.position();
-            desc = TypeDescriptor.createInstanceFromBB(bb);
+            desc = createInstanceFromBB(bb);
         }
         catch (Exception e){
             bb.position(bb_pos);
@@ -59,6 +59,46 @@ public class TypeDecoderFactoryImpl implements TypeDecoderFactory, ITypeDescript
                 throw  new TypeNotPresentException(String.valueOf(desc != null ? desc.getClass().toString() : "Unknown, type id: " + bb.get()), new Exception());
             }
         }
+
+        return desc;
+    }
+
+    public static TypeDescriptor createInstanceFromBB(ByteBuffer bb){
+        int bb_pos = bb.position();
+        byte desc_type = bb.get();
+        TypeDescriptor desc = null;
+        switch (desc_type){
+            case IDescType.SET_DESC_TYPE: desc = new SetTypeDescriptor(); break;
+            case IDescType.OBJECT_SHAPE_DESC_TYPE: desc = new ObjectShapeDescriptor(); break;
+            case IDescType.BASE_SCALAR_DESC_TYPE: desc = new BaseScalarTypeDescriptor(); break;
+            case IDescType.SCALAR_DESC_TYPE: desc = new ScalarTypeDescriptor(); break;
+            case IDescType.TUPLE_DESC_TYPE: desc = new TupleTypeDescriptor(); break;
+            case IDescType.NAMED_TUPLE_DESC_TYPE: desc = new NamedTupleTypeDescriptor(); break;
+            case IDescType.ARRAY_DESC_TYPE: desc = new ArrayTypeDescriptor(); break;
+            case IDescType.ENUMERATION_DESC_TYPE: desc = new EnumerationTypeDescriptor(); break;
+            case IDescType.INPUT_SHAPE_DESC_TYPE: desc = new InputShapeTypeDescriptor(); break;
+            case IDescType.RANGE_DESC_TYPE: desc = new RangeTypeDescriptor(); break;
+            case IDescType.SCALAR_ANNOTATION_DESC_TYPE: desc = new ScalarTypeNameAnnotation(); break;
+            default:
+                if(desc_type >= IDescType.TYPE_ANNOTATION_DESC_TYPE_START && desc_type <= IDescType.TYPE_ANNOTATION_DESC_TYPE_END){
+                    desc = new TypeAnnotationDescriptor(desc_type);
+                    break;
+                }
+        }
+
+        try {
+            if(desc != null){
+                if(!desc.parse(bb)){
+                    desc = null;
+                }
+            }
+        }
+        catch (Exception e){
+            desc = null;
+            e.printStackTrace();
+        }
+        if(desc == null)
+            bb.position(bb_pos);
 
         return desc;
     }

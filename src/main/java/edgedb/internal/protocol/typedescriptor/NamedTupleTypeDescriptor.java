@@ -17,18 +17,23 @@ public class NamedTupleTypeDescriptor extends TypeDescriptor {
         if(length <= 0 || length > bb.remaining() || elementCount < 0)
             return null;
 
-        Map<String, Object> result_map = new HashMap<>();
-        for(int i = 0; i < elementCount; i++){
-            TypeDescriptor parent_desc = descriptor_holder.getTypeDescriptor(tupleElements[i].typePos);
-            if(parent_desc != null){
-                int start_pos_bb = bb.position();
-                result_map.put(tupleElements[i].name, parent_desc.decodeData(bb, length));
-                length -= (bb.position() - start_pos_bb);
-            }
+        int nelems = bb.getInt();
+        if(nelems != elementCount){
+            bb.position(bb.position() + length - 4);
+            System.err.println("ERROR! NamedTupleTypeDescriptor.decodeDate: elementCount (" + elementCount +") in descriptor != elementCount in data (" + nelems + ")");
+            return null;
         }
 
         IDataContainer container = data_factory.getInstance(this);
-        container.setData(result_map);
+        for(int i = 0; i < nelems; i++){
+            TypeDescriptor parent_desc = descriptor_holder.getTypeDescriptor(tupleElements[i].typePos);
+            if(parent_desc != null){
+                int reserved = bb.getInt();
+                int elem_length = bb.getInt();
+                container.addChild(parent_desc.decodeData(bb, elem_length));
+            }
+        }
+
         return container;
     }
 

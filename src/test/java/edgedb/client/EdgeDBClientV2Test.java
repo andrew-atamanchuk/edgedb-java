@@ -63,6 +63,12 @@ public class EdgeDBClientV2Test {
         query = "select Person {name, books, color, number, bags :{name, volume, @ownership}} filter .name = 'Kolia-1'";
         query = "select Person {name, values, metadata, tuple_of_arrays, nested_tuple, unnamed_tuple} filter .name = 'Kolia-3'";
 
+//        query = "update default::Person \n" +
+//                "filter .name = \"Kolia-3\"\n" +
+//                "set {\n" +
+//                "  values := <range<std::int64>> range(2, 10, inc_lower := true, inc_upper := true)\n" +
+//                "}\n";
+
         ConnectionParams cp = new ConnectionParams();
         cp.setPort(10705);
 
@@ -124,28 +130,38 @@ public class EdgeDBClientV2Test {
         System.out.print("[");
         while (iterator.hasNext()){
             IDataContainer cont = iterator.next();
-            if(cont == null)
-                continue;
-
-            if(cont.getCountChildren() > 0){
-                printData(cont.getChildrenIterator());
-            }
-            else{
-                if(cont.getData() instanceof Object[]){
-                    printArray((Object[])cont.getData());
-                }
-                else {
-                    System.out.print(cont.getData() + "; ");
-                }
-            }
+            printContainer(cont);
         }
         System.out.print("]");
+    }
+
+    public void printContainer(IDataContainer cont){
+        if(cont == null)
+            return;
+
+        if(cont.getCountChildren() > 0){
+            System.out.print("<" + cont.getType()+">");
+            printData(cont.getChildrenIterator());
+        }
+        else{
+            if(cont.getData() instanceof Object[]){
+                printArray((Object[])cont.getData());
+            }
+            else {
+                System.out.print(cont.getData() + "; ");
+            }
+        }
     }
 
     public void printArray(Object[] arr){
         System.out.print("[");
         for(int i = 0; i < arr.length; i++){
-            System.out.print(arr[i] + "; ");
+            if(arr[i] instanceof IDataContainer){
+                printContainer((IDataContainer)arr[i]);
+            }
+            else {
+                System.out.print(arr[i] + "; ");
+            }
         }
         System.out.print("]");
     }

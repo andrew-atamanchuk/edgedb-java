@@ -17,13 +17,20 @@ public class TupleTypeDescriptor extends TypeDescriptor {
         if(length <= 0 || length > bb.remaining() || elementCount < 0)
             return null;
 
+        int nelems = bb.getInt();
+        if(nelems != elementCount){
+            bb.position(bb.position() + length - 4);
+            System.err.println("ERROR! TupleTypeDescriptor.decodeDate: elementCount (" + elementCount +") in descriptor != elementCount in data (" + nelems + ")");
+            return null;
+        }
+
         IDataContainer container = data_factory.getInstance(this);
-        for(int i = 0; i < elementCount; i++){
+        for(int i = 0; i < nelems; i++){
             TypeDescriptor parent_desc = descriptor_holder.getTypeDescriptor(elementTypes[i]);
             if(parent_desc != null){
-                int start_pos_bb = bb.position();
-                container.addChild(parent_desc.decodeData(bb, length));
-                length -= (bb.position() - start_pos_bb);
+                int reserved = bb.getInt();
+                int elem_length = bb.getInt();
+                container.addChild(parent_desc.decodeData(bb, elem_length));
             }
         }
 

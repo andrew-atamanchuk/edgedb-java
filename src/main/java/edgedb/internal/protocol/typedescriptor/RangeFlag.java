@@ -2,19 +2,19 @@ package edgedb.internal.protocol.typedescriptor;
 
 public enum RangeFlag {
     // Empty range.
-    EMPTY((byte)0x01),
+    EMPTY((byte)0x0001),
 
     // Included lower boundary.
-    LB_INC((byte)0x02),
+    LB_INC((byte)0x0002),
 
     // Included upper boundary.
-    UB_INC((byte)0x04),
+    UB_INC((byte)0x0004),
 
     // Inifinity (excluded) lower boundary.
-    LB_INF((byte)0x08),
+    LB_INF((byte)0x0008),
 
     // Infinity (excluded) upper boundary.
-    UB_INF((byte)0x10);
+    UB_INF((byte)0x0010);
 
     public byte flag;
 
