@@ -89,7 +89,7 @@ public class TypeDecoderFactoryImpl implements TypeDecoderFactory, ITypeDescript
             if(desc != null){
                 desc.setDescriptorHolder(this);
                 desc.setDataContainerFactory(this);
-                input_desc_list.add(output_desc_list.size(), desc);
+                input_desc_list.add(desc);
                 if(desc instanceof ObjectShapeDescriptor)
                     input_root_osd = (ObjectShapeDescriptor)desc;
             }
@@ -105,7 +105,7 @@ public class TypeDecoderFactoryImpl implements TypeDecoderFactory, ITypeDescript
             if(desc != null){
                 desc.setDescriptorHolder(this);
                 desc.setDataContainerFactory(this);
-                output_desc_list.add(output_desc_list.size(), desc);
+                output_desc_list.add(desc);
                 if(desc instanceof ObjectShapeDescriptor)
                     output_root_osd = (ObjectShapeDescriptor)desc;
             }

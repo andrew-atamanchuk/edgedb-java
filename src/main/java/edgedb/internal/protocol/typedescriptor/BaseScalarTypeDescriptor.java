@@ -53,19 +53,58 @@ public class BaseScalarTypeDescriptor extends TypeDescriptor {
         return length;
     }
 
-    private static int encodeBaseScalar(ByteBuffer bb, IDataContainer container, BaseScalarType scalar_type){
+    @Override
+    public IDataContainer createInputDataFrame() {
+        return data_factory.getInstance(this);
+    }
 
+    private static int encodeBaseScalar(ByteBuffer bb, IDataContainer container, BaseScalarType scalar_type){
+        int start_bb_pos = bb.position();
         switch (scalar_type){
             case UUID_SCALAR_TYPE: return UUIDUtils.convertUUIDToBB((UUID)container.getData(), bb);
             case STRING_SCALAR_TYPE: {
                 String value = (String) container.getData();
                 int value_length = value.length();
                 bb.put(value.getBytes(), 0, value_length);
-                return value_length;
+                break;
+            }
+            case BYTES_SCALAR_TYPE:{
+                byte[] arr = (byte[])container.getData();
+                bb.put(arr, 0, arr.length);
+                break;
+            }
+            case INT16_SCALAR_TYPE: bb.putShort((short)container.getData()); break;
+            case INT32_SCALAR_TYPE: bb.putInt((int)container.getData()); break;
+            case INT64_SCALAR_TYPE: bb.putLong((long)container.getData()); break;
+            case FLOAT32_SCALAR_TYPE: bb.putFloat((float)container.getData()); break;
+            case FLOAT64_SCALAR_TYPE: bb.putDouble((double)container.getData()); break;
+            case DECIMAL_SCALAR_TYPE: return -1; //TODO will be implemented
+            case BOOL_SCALAR_TYPE: bb.put(((boolean)container.getData()) ? (byte)1 : (byte)0); break;
+            case DATETIME_SCALAR_TYPE:
+            case LOCAL_DATE_TIME_SCALAR_TYPE:
+            case LOCAL_TIME_SCALAR_TYPE:
+            case MEMORY_SCALAR_TYPE:
+                bb.putLong((long)container.getData()); break;
+            case LOCAL_DATE_SCALAR_TYPE: bb.putInt((int)container.getData()); break;
+            case DURATION_SCALAR_TYPE:
+            case RELATIVE_DURATION_SCALAR_TYPE:
+            case DATE_DURATION_SCALAR_TYPE:
+                Duration dur = (Duration) container.getData();
+                bb.putLong(dur.microseconds);
+                bb.putInt(dur.days);
+                bb.putInt(dur.months);
+                break;
+            case BIGINT_SCALAR_TYPE: return -1; //TODO will be implemented
+            case JSON_SCALAR_TYPE: {
+                bb.put((byte)1); // format is currently always 1, and jsondata is a UTF-8 encoded JSON string.
+                String value = (String) container.getData();
+                int value_length = value.length();
+                bb.put(value.getBytes(), 0, value_length);
+                break;
             }
         }
 
-        return -1;
+        return bb.position() - start_bb_pos;
     }
 
     public static Object decodeBaseScalar(ByteBuffer bb, int length, BaseScalarType scalar_type){
@@ -112,7 +151,7 @@ public class BaseScalarTypeDescriptor extends TypeDescriptor {
             case MEMORY_SCALAR_TYPE:
                 return bb.getLong();
             case LOCAL_DATE_SCALAR_TYPE: return bb.getInt();
-            case DURATION_SCALAR_TYPE: // TODO this can be changed to Long type
+            case DURATION_SCALAR_TYPE:
             case RELATIVE_DURATION_SCALAR_TYPE:
             case DATE_DURATION_SCALAR_TYPE:
                 return new Duration(bb.getLong(), bb.getInt(), bb.getInt());

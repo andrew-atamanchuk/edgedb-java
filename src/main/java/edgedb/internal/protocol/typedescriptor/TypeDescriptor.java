@@ -23,13 +23,14 @@ public abstract class TypeDescriptor implements IDescType {
 
     abstract public IDataContainer decodeData(ByteBuffer bb, int length);
     abstract public int encodeData(ByteBuffer bb, IDataContainer container);
+    abstract public IDataContainer createInputDataFrame();
 
     public byte getType(){
         return type;
     }
 
     public boolean parse(ByteBuffer bb){
-        if(bb.remaining() > id.length) {
+        if(bb.remaining() >= id.length) {
             int pos = bb.position();
             bb.get(id, 0, id.length);
             bb.position(pos);

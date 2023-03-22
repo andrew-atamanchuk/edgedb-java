@@ -24,6 +24,22 @@ public class EnumerationTypeDescriptor extends TypeDescriptor {
     }
 
     @Override
+    public int encodeData(ByteBuffer bb, IDataContainer container) {
+        Object data = container.getData();
+        int start_bb_pos = bb.position();
+
+        String str = data.toString();
+        bb.put(str.getBytes(), 0, str.length());
+
+        return bb.position() - start_bb_pos;
+    }
+
+    @Override
+    public IDataContainer createInputDataFrame() {
+        return data_factory.getInstance(this);
+    }
+
+    @Override
     public boolean parse(ByteBuffer bb) {
         if(!super.parse(bb))
             return false;

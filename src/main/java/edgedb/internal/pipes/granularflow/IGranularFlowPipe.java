@@ -1,10 +1,8 @@
 package edgedb.internal.pipes.granularflow;
 
 import edgedb.internal.protocol.Execute;
-import edgedb.internal.protocol.ExecuteNew;
+import edgedb.internal.protocol.ExecuteV2;
 import edgedb.internal.protocol.Prepare;
-
-import java.io.IOException;
 
 
 public interface IGranularFlowPipe {
@@ -12,5 +10,5 @@ public interface IGranularFlowPipe {
     public void sendDescribeStatementMessage();
     public void sendExecuteMessage(Execute executeMessage);
     public void sendOptimisticExecuteMessage();
-    public void sendExecuteNewMessage(ExecuteNew executeMessage);
+    public void sendExecuteMessageV2(ExecuteV2 executeMessage);
 }

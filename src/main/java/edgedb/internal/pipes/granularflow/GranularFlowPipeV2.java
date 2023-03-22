@@ -1,13 +1,11 @@
 package edgedb.internal.pipes.granularflow;
 
 import edgedb.internal.protocol.Execute;
-import edgedb.internal.protocol.ExecuteNew;
+import edgedb.internal.protocol.ExecuteV2;
 import edgedb.internal.protocol.Prepare;
 import edgedb.internal.protocol.client.writerV2.*;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.IOException;
 
 @Slf4j
 @AllArgsConstructor
@@ -33,8 +31,8 @@ public class GranularFlowPipeV2 implements IGranularFlowPipe{
     }
 
     @Override
-    public void sendExecuteNewMessage(ExecuteNew executeMessage) {
-        log.debug("Sending execute new message {}",executeMessage);
+    public void sendExecuteMessageV2(ExecuteV2 executeMessage) {
+        log.debug("Sending execute V2 message {}",executeMessage);
         protocolWritable.write(new SyncBufferWritableDecorator<>(executeMessage));
     }
 

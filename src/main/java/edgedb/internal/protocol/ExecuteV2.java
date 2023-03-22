@@ -1,8 +1,5 @@
 package edgedb.internal.protocol;
 
-import edgedb.internal.protocol.ClientProtocolBehaviour;
-import edgedb.internal.protocol.Header;
-import edgedb.internal.protocol.Prepare;
 import edgedb.internal.protocol.client.writerV2.BufferWritable;
 import edgedb.internal.protocol.client.writerhelper.BufferWriterHelper;
 import edgedb.internal.protocol.client.writerhelper.IWriteHelper;
@@ -18,7 +15,7 @@ import static edgedb.internal.protocol.constants.MessageType.EXECUTE;
 
 @Data
 @Slf4j
-public class ExecuteNew implements BufferWritable, ClientProtocolBehaviour {
+public class ExecuteV2 implements BufferWritable, ClientProtocolBehaviour {
     byte mType = EXECUTE;
     int messageLength;
     short headersLength;
@@ -47,7 +44,7 @@ public class ExecuteNew implements BufferWritable, ClientProtocolBehaviour {
             this.value = value;
         }
     };
-    public ExecuteNew(char IOFormat, char expectedCardinality, String command) {
+    public ExecuteV2(char IOFormat, char expectedCardinality, String command) {
         this.headersLength = (short) 0;
         this.ioFormat = (byte) IOFormat;
         this.expectedCardinality = (byte) expectedCardinality;
@@ -118,5 +115,12 @@ public class ExecuteNew implements BufferWritable, ClientProtocolBehaviour {
         helper.writeBytes(arguments);
 
         return destination;
+    }
+
+    public void setArguments(ByteBuffer bb){
+        if(bb.remaining() > 0) {
+            arguments = new byte[bb.remaining()];
+            bb.get(arguments, 0, bb.remaining());
+        }
     }
 }

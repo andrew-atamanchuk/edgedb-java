@@ -18,6 +18,16 @@ public class ScalarTypeNameAnnotation extends TypeDescriptor {
     }
 
     @Override
+    public int encodeData(ByteBuffer bb, IDataContainer container) {
+        return 0;
+    }
+
+    @Override
+    public IDataContainer createInputDataFrame() {
+        return null;
+    }
+
+    @Override
     public boolean parse(ByteBuffer bb) {
         if(!super.parse(bb))
             return false;

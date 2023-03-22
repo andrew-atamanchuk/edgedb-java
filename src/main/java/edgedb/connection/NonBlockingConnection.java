@@ -2,11 +2,14 @@ package edgedb.connection;
 
 import edgedb.client.ResultSet;
 import edgedb.connectionparams.ConnectionParams;
+import edgedb.internal.protocol.CommandDataDescriptor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.*;
+import java.util.UUID;
 
 @Slf4j
 public class NonBlockingConnection implements IConnection {
@@ -71,6 +74,16 @@ public class NonBlockingConnection implements IConnection {
 
     @Override
     public SocketChannel getChannel() {
+        return null;
+    }
+
+    @Override
+    public CommandDataDescriptor sendParseV2(char IOFormat, char cardinality, String command) {
+        return null;
+    }
+
+    @Override
+    public ResultSet sendExecuteV2(char IOFormat, char cardinality, String command, UUID input_typedesc_id, UUID output_typedesc_id, ByteBuffer args_bb) {
         return null;
     }
 }

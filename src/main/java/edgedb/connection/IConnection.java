@@ -6,7 +6,7 @@ import edgedb.exceptions.EdgeDBInternalErrException;
 
 import java.io.IOException;
 
-public interface IConnection extends IChannel, Query{
+public interface IConnection extends IChannel, Query, IQueryV2{
     //public IConnection connect(ConnectionParams connectionParams) throws IOException, EdgeDBInternalErrException;
     public IConnection createClientSocket(ConnectionParams connectionParams) throws IOException;
     public void terminate() throws IOException;

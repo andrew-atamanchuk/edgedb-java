@@ -12,4 +12,5 @@ public class Duration {
         this.days = days;
         this.months = months;
     }
+
 }

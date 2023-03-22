@@ -45,6 +45,8 @@ public class BlockingConnection implements IConnection {
     ConnectionParams connectionParams;
     byte[] serverKey;
 
+    private IGranularFlowPipe granularFlowPipe = null;
+
     @Override
     public ResultSet query(String query) {
         return executeGranularFlow(IOFormat.BINARY, Cardinality.MANY, query);
@@ -254,10 +256,10 @@ public class BlockingConnection implements IConnection {
             granularFlowPipe.sendExecuteMessage(new Execute());
         }
         else{
-            ExecuteNew exec = new ExecuteNew(IOFormat, cardinality, command);
+            ExecuteV2 exec = new ExecuteV2(IOFormat, cardinality, command);
             exec.setInput_typedesc_id(data_descriptor.getInput_typedesc_id() == null ? new UUID(0, 0) : data_descriptor.getInput_typedesc_id());
             exec.setOutput_typedesc_id(data_descriptor.getOutput_typedesc_id() == null ? new UUID(0, 0) : data_descriptor.getOutput_typedesc_id());
-            granularFlowPipe.sendExecuteNewMessage(exec);
+            granularFlowPipe.sendExecuteMessageV2(exec);
         }
 
         ResultSet result = readDataResponse();
@@ -265,12 +267,30 @@ public class BlockingConnection implements IConnection {
         return result;
     }
 
-    protected ResultSet executeNewFlow(char IOFormat, char cardinality, String command) {
-        IGranularFlowPipe granularFlowPipe = new GranularFlowPipeV2(
+
+    @Override
+    public CommandDataDescriptor sendParseV2(char IOFormat, char cardinality, String command){
+        granularFlowPipe = new GranularFlowPipeV2(
                 new ChannelProtocolWritableImpl(getChannel()));
 
-        ExecuteNew exec_message = new ExecuteNew(IOFormat, cardinality, command);
-        granularFlowPipe.sendExecuteNewMessage(exec_message);
+        Prepare prepareMessage = new Prepare(IOFormat, cardinality, command);
+        granularFlowPipe.sendPrepareMessage(prepareMessage);
+
+        return readCommandDataDescriptor(granularFlowPipe, prepareMessage);
+    }
+
+    @Override
+    public ResultSet sendExecuteV2(char IOFormat, char cardinality, String command, UUID input_typedesc_id, UUID output_typedesc_id, ByteBuffer args_bb) {
+        if(granularFlowPipe == null) {
+            granularFlowPipe = new GranularFlowPipeV2(
+                    new ChannelProtocolWritableImpl(getChannel()));
+        }
+
+        ExecuteV2 exec_message = new ExecuteV2(IOFormat, cardinality, command);
+        exec_message.setInput_typedesc_id(input_typedesc_id == null ? new UUID(0, 0) : input_typedesc_id);
+        exec_message.setOutput_typedesc_id(output_typedesc_id == null ? new UUID(0, 0) : output_typedesc_id);
+        exec_message.setArguments(args_bb);
+        granularFlowPipe.sendExecuteMessageV2(exec_message);
         return readDataResponse();
     }
 
@@ -298,7 +318,7 @@ public class BlockingConnection implements IConnection {
                 log.debug("Response is an Instance Of DataResponse {}", (DataResponse) response);
                 dataResponse = (DataResponse) response;
 
-                resultSet.setResultData(dataResponse);
+                resultSet.addResultData(dataResponse);
 
                 log.debug("Data Response :- {}", dataResponse);
             }
