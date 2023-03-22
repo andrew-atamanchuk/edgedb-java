@@ -34,6 +34,7 @@ public class ScalarTypeDescriptor extends TypeDescriptor {
         if(container.getChildrenIterator().hasNext()) {
             TypeDescriptor child_desc = descriptor_holder.getInputTypeDescriptor(baseTypePosition);
             IDataContainer child_cont = container.getChildrenIterator().next();
+            child_cont.setData(container.getData());
             child_desc.encodeData(bb, child_cont);
         }
 

@@ -126,7 +126,7 @@ public class EdgeDBClientV2Test {
         String query = "select Person {id, name, last_name, profession, birth, age, best_friend}";
         query = "select Person {name, last_name, best_friend :{name, last_name}, bags :{name, volume, @ownership, @order}}";
         query = "select Person {name, books, color, number, bags :{name, volume, @ownership}} filter .name = 'Kolia-1'";
-        query = "select Person {name, values, metadata, tuple_of_arrays, nested_tuple, unnamed_tuple} filter .name = <str>$name";
+        query = "select Person {name, values, metadata, tuple_of_arrays, nested_tuple, unnamed_tuple} filter .number = <posint64>$param1";
 
 //        query = "update default::Person \n" +
 //                "filter .name = \"Kolia-3\"\n" +
@@ -158,8 +158,8 @@ public class EdgeDBClientV2Test {
             while (iter.hasNext()){
                 IDataContainer child = iter.next();
                 ShapeElement se = obj_shape_desc.shapeElements[child_index++];
-                if(se.getName().equalsIgnoreCase("name")){
-                    child.setData("Kolia-1");
+                if(se.getName().equalsIgnoreCase("param1")){
+                    child.setData(222L);
                 }
                 else if (se.getName().equalsIgnoreCase("volume")){
                     child.setData(55);
