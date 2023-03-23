@@ -17,7 +17,9 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 @Slf4j
 public class EdgeDBClientV2Test {
@@ -134,16 +136,19 @@ public class EdgeDBClientV2Test {
 //                "  values := <range<std::int64>> range(2, 10, inc_lower := true, inc_upper := true)\n" +
 //                "}\n";
 
-        //query = "INSERT Bag { name := <str>$name, volume := <int32>$volume }";
+        String query2 = "INSERT Bag { name := <str>$name, volume := <int32>$volume }";
 
         ConnectionParams cp = new ConnectionParams();
-        cp.setPort(10700);
+        cp.setPort(10705);
 
         try{
             IConnection connection = clientV2.getConnection(cp);
             char out_format = IOFormat.BINARY;
+            char out_format2 = IOFormat.JSON_ELEMENTS;
 
             CommandDataDescriptor cdd = connection.sendParseV2(out_format, Cardinality.MANY, query);
+
+            CommandDataDescriptor cdd2 = connection.sendParseV2(out_format2, Cardinality.MANY, query2);
 
             TypeDecoderFactoryImpl tdf = new TypeDecoderFactoryImpl();
             if(cdd == null) {
@@ -151,61 +156,110 @@ public class EdgeDBClientV2Test {
             }
             tdf.decodeDescriptors(cdd);
 
-            ObjectShapeDescriptor obj_shape_desc = (ObjectShapeDescriptor) tdf.getInputRootTypeDescriptor();
-            IDataContainer container = obj_shape_desc.createInputDataFrame();
-            Iterator<IDataContainer> iter = container.getChildrenIterator();
-            int child_index = 0;
-            while (iter.hasNext()){
-                IDataContainer child = iter.next();
-                ShapeElement se = obj_shape_desc.shapeElements[child_index++];
-                if(se.getName().equalsIgnoreCase("param1")){
-                    child.setData(222L);
-                }
-                else if (se.getName().equalsIgnoreCase("volume")){
-                    child.setData(55);
-                }
+            TypeDecoderFactoryImpl tdf2 = new TypeDecoderFactoryImpl();
+            if(cdd2 == null) {
+                return;
             }
+            tdf2.decodeDescriptors(cdd2);
 
-            ByteBuffer in_bb = ByteBuffer.allocate(1000);
+            ObjectShapeDescriptor obj_shape_desc = (ObjectShapeDescriptor) tdf.getInputRootTypeDescriptor();
+            ByteBuffer in_bb = ByteBuffer.allocate(2000);
+            Map<String, Object> values = new HashMap<>();
+            values.put("param1", 4L);
+            IDataContainer container = fillData(obj_shape_desc, values);
             obj_shape_desc.encodeData(in_bb, container);
             in_bb.flip();
 
             ResultSet result = connection.sendExecuteV2(out_format, Cardinality.MANY, query, cdd.getInput_typedesc_id(), cdd.getOutput_typedesc_id(), in_bb);
+            printResult(out_format, result, tdf);
 
-            if(out_format == IOFormat.JSON_ELEMENTS) {
-                for(DataResponse resp : ((ResultSetImpl) result).getDataResponses()) {
-                    if (resp != null && resp.getDataLength() > 0) {
-                        for (DataElement elem : resp.getDataElements()) {
-                            log.info("DataElement: " + new String(elem.getDataElement()));
-                        }
-                    }
-                }
-            }
-            else{
-                ArrayList<IDataContainer> result_arr = new ArrayList<>();
-                for(DataResponse resp : ((ResultSetImpl) result).getDataResponses()){
-                    if(resp != null && resp.getDataLength() > 0){
-                        for(DataElement elem : resp.getDataElements()){
-                            //log.info("DataElement: " + new String(elem.getDataElement()));
-                            ByteBuffer bb = ByteBuffer.wrap(elem.getDataElement());
+            ObjectShapeDescriptor obj_shape_desc2 = (ObjectShapeDescriptor) tdf2.getInputRootTypeDescriptor();
+            in_bb.clear();
+            values.clear();
+            values.put("name", "test_bag");
+            values.put("volume", 44);
+            IDataContainer container2 = fillData(obj_shape_desc2, values);
+            obj_shape_desc2.encodeData(in_bb, container2);
+            in_bb.flip();
 
-                            TypeDescriptor root_desc = tdf.getOutputRootTypeDescriptor();
-                            result_arr.add(root_desc.decodeData(bb, bb.remaining()));
-                        }
-                    }
-                }
+            result = connection.sendExecuteV2(out_format2, Cardinality.MANY, query2, cdd2.getInput_typedesc_id(), cdd2.getOutput_typedesc_id(), in_bb);
+            printResult(out_format2, result, tdf2);
 
-                System.out.println("Decoded results:");
-                for (IDataContainer row : result_arr){
-                    if(row.getCountChildren() > 0)
-                        printData(row.getChildrenIterator());
-                    System.out.println();
-                }
-            }
+
+            in_bb.clear();
+            values.clear();
+            values.put("param1", 6L);
+            container = fillData(obj_shape_desc, values);
+            obj_shape_desc.encodeData(in_bb, container);
+            in_bb.flip();
+
+            result = connection.sendExecuteV2(out_format, Cardinality.MANY, query, cdd.getInput_typedesc_id(), cdd.getOutput_typedesc_id(), in_bb);
+            printResult(out_format, result, tdf);
+            in_bb.flip();
+
+            result = connection.sendExecuteV2(out_format, Cardinality.MANY, query, cdd.getInput_typedesc_id(), cdd.getOutput_typedesc_id(), in_bb);
 
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void printResult(char out_format, ResultSet result, TypeDecoderFactoryImpl tdf){
+        if(out_format == IOFormat.JSON_ELEMENTS) {
+            for(DataResponse resp : ((ResultSetImpl) result).getDataResponses()) {
+                if (resp != null && resp.getDataLength() > 0) {
+                    for (DataElement elem : resp.getDataElements()) {
+                        log.info("DataElement: " + new String(elem.getDataElement()));
+                    }
+                }
+            }
+        }
+        else{
+            ArrayList<IDataContainer> result_arr = new ArrayList<>();
+            for(DataResponse resp : ((ResultSetImpl) result).getDataResponses()){
+                if(resp != null && resp.getDataLength() > 0){
+                    for(DataElement elem : resp.getDataElements()){
+                        ByteBuffer bb = ByteBuffer.wrap(elem.getDataElement());
+
+                        TypeDescriptor root_desc = tdf.getOutputRootTypeDescriptor();
+                        result_arr.add(root_desc.decodeData(bb, bb.remaining()));
+                    }
+                }
+            }
+
+            System.out.println("Decoded results:");
+            for (IDataContainer row : result_arr){
+                if(row.getCountChildren() > 0)
+                    printData(row.getChildrenIterator());
+                System.out.println();
+            }
+        }
+    }
+
+    public IDataContainer fillData(ObjectShapeDescriptor obj_shape_desc, Map<String, Object> values){
+        IDataContainer container = obj_shape_desc.createInputDataFrame();
+        Iterator<IDataContainer> iter = container.getChildrenIterator();
+        int child_index = 0;
+        while (iter.hasNext()){
+            IDataContainer child = iter.next();
+            ShapeElement se = obj_shape_desc.shapeElements[child_index++];
+
+            for(String field_name : values.keySet()) {
+                if (se.getName().equalsIgnoreCase(field_name)) {
+                    switch (child.getType()) {
+                        case TypeDescriptor.BASE_SCALAR_DESC_TYPE:
+                            child.setData(values.get(field_name));
+                            break;
+                        case TypeDescriptor.SCALAR_DESC_TYPE:
+                            if (child.getChildrenIterator().hasNext())
+                                child.getChildrenIterator().next().setData(values.get(field_name));
+                            break;
+                    }
+                }
+            }
+        }
+
+        return container;
     }
 
     public void printData(Iterator<IDataContainer> iterator){
