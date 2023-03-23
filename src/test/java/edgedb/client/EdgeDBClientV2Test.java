@@ -170,7 +170,7 @@ public class EdgeDBClientV2Test {
             obj_shape_desc.encodeData(in_bb, container);
             in_bb.flip();
 
-            ResultSet result = connection.sendExecuteV2(out_format, Cardinality.MANY, query, cdd.getInput_typedesc_id(), cdd.getOutput_typedesc_id(), in_bb);
+            ResultSet result = connection.sendExecuteV2(out_format, Cardinality.ONE, query, cdd.getInput_typedesc_id(), cdd.getOutput_typedesc_id(), in_bb);
             printResult(out_format, result, tdf);
 
             ObjectShapeDescriptor obj_shape_desc2 = (ObjectShapeDescriptor) tdf2.getInputRootTypeDescriptor();

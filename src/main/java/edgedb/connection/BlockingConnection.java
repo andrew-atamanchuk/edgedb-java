@@ -238,7 +238,6 @@ public class BlockingConnection implements IConnection {
         Prepare prepareMessage = new Prepare(IOFormat, cardinality, command);
         granularFlowPipe.sendPrepareMessage(prepareMessage);
 
-
         CommandDataDescriptor data_descriptor = null;
         if(MAJOR_VERSION < 1) {
             PrepareComplete prepareComplete = readPrepareComplete(granularFlowPipe, prepareMessage);
@@ -313,15 +312,38 @@ public class BlockingConnection implements IConnection {
 
             T response = reader.read(readBuffer);
 
+            if(response != null){
+                if (response instanceof DataResponse) {
+                    log.debug("Response is an Instance Of DataResponse {}", (DataResponse) response);
+                    dataResponse = (DataResponse) response;
 
-            if (response != null && response instanceof DataResponse) {
-                log.debug("Response is an Instance Of DataResponse {}", (DataResponse) response);
-                dataResponse = (DataResponse) response;
+                    resultSet.addResultData(dataResponse);
 
-                resultSet.addResultData(dataResponse);
+                    log.debug("Data Response :- {}", dataResponse);
+                }
+                if (response instanceof ReadyForCommand) {
+                    log.debug("Response is an Instance Of ReadyForCommand {}", (ReadyForCommand) response);
+                    ReadyForCommand readyForCommand = (ReadyForCommand) response;
 
-                log.debug("Data Response :- {}", dataResponse);
+                    switch (readyForCommand.getTransactionState()) {
+                        case (int) IN_FAILED_TRANSACTION:
+                            log.info("In Failed Transaction");
+                            //TODO: Coding to concrete implementation here. Watch out.
+                            SyncPipe syncPipe = new SyncPipeImpl(
+                                    new ChannelProtocolWritableImpl(getChannel()));
+                            syncPipe.sendSyncMessage();
+                            continue;
+                        case (int) IN_TRANSACTION:
+                            log.info("In Transaction");
+                            throw new UnsupportedOperationException();
+                        case (int) NOT_IN_TRANSACTION:
+                            log.info("Not In Transaction");
+                            break;
+                    }
+                    break;
+                }
             }
+
         }
         return resultSet;
 

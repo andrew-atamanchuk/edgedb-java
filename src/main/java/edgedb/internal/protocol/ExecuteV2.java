@@ -118,7 +118,7 @@ public class ExecuteV2 implements BufferWritable, ClientProtocolBehaviour {
     }
 
     public void setArguments(ByteBuffer bb){
-        if(bb.remaining() > 0) {
+        if(bb != null && bb.remaining() > 0) {
             arguments = new byte[bb.remaining()];
             bb.get(arguments, 0, bb.remaining());
         }
