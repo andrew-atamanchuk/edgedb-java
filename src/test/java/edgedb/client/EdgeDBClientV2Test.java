@@ -131,7 +131,7 @@ public class EdgeDBClientV2Test {
         String query = "select Person {id, name, last_name, profession, birth, age, best_friend}";
         query = "select Person {name, last_name, best_friend :{name, last_name}, bags :{name, volume, @ownership, @order}}";
         query = "select Person {name, books, color, number, bags :{name, volume, @ownership}} filter .name = 'Kolia-1'";
-        query = "select Person {name, values, metadata, tuple_of_arrays, nested_tuple, unnamed_tuple} filter .number = <posint64>$param1";
+        query = "select Person {name, values, metadata, tuple_of_arrays, nested_tuple, unnamed_tuple} filter .profession = <str>$param1";
 
 //        query = "update default::Person \n" +
 //                "filter .name = \"Kolia-3\"\n" +
@@ -148,8 +148,8 @@ public class EdgeDBClientV2Test {
 
         SuperQuery super_query2 = new SuperQuery();
         super_query2.command = query2;
-        super_query2.output_format = IOFormat.JSON_ELEMENTS;
-        super_query2.cardinality = Cardinality.MANY;
+        super_query2.output_format = IOFormat.JSON;
+        super_query2.cardinality = Cardinality.ONE;
 
         ConnectionParams cp = new ConnectionParams();
         cp.setPort(10700);
@@ -166,7 +166,7 @@ public class EdgeDBClientV2Test {
             ObjectShapeDescriptor obj_shape_desc = (ObjectShapeDescriptor) super_query1.getInputRootTypeDescriptor();
             ByteBuffer in_bb = ByteBuffer.allocate(2000);
             Map<String, Object> values = new HashMap<>();
-            values.put("param1", 222L);
+            values.put("param1", "student");
             IDataContainer container = fillData(obj_shape_desc, values);
             obj_shape_desc.encodeData(in_bb, container);
             in_bb.flip();
@@ -189,7 +189,7 @@ public class EdgeDBClientV2Test {
 
             in_bb.clear();
             values.clear();
-            values.put("param1", 33L);
+            values.put("param1", "qwer");
             container = fillData(obj_shape_desc, values);
             obj_shape_desc.encodeData(in_bb, container);
             in_bb.flip();
@@ -204,7 +204,7 @@ public class EdgeDBClientV2Test {
     }
 
     public void printResult(SuperQuery sq, ResultSet result){
-        if(sq.outputFormat() == IOFormat.JSON_ELEMENTS) {
+        if(sq.outputFormat() == IOFormat.JSON_ELEMENTS || sq.outputFormat() == IOFormat.JSON) {
             for(DataResponse resp : ((ResultSetImpl) result).getDataResponses()) {
                 if (resp != null && resp.getDataLength() > 0) {
                     for (DataElement elem : resp.getDataElements()) {
