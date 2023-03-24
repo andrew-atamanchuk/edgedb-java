@@ -3,6 +3,7 @@ package edgedb.connection;
 import edgedb.client.ResultSet;
 import edgedb.connectionparams.ConnectionParams;
 import edgedb.internal.protocol.CommandDataDescriptor;
+import edgedb.internal.protocol.typedescriptor.decoder.ITypeDescriptorHolder;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -78,12 +79,12 @@ public class NonBlockingConnection implements IConnection {
     }
 
     @Override
-    public CommandDataDescriptor sendParseV2(char IOFormat, char cardinality, String command) {
+    public CommandDataDescriptor sendParseV2(ITypeDescriptorHolder desc_holder) {
         return null;
     }
 
     @Override
-    public ResultSet sendExecuteV2(char IOFormat, char cardinality, String command, UUID input_typedesc_id, UUID output_typedesc_id, ByteBuffer args_bb) {
+    public ResultSet sendExecuteV2(ITypeDescriptorHolder desc_holder, ByteBuffer args_bb) {
         return null;
     }
 }
