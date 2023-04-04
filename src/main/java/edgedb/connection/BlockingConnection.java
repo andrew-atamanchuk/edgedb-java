@@ -84,7 +84,10 @@ public class BlockingConnection implements IConnection {
         BufferReader bufferReader = new BufferReaderImpl(clientChannel);
         ByteBuffer readBuffer = SingletonBuffer.getInstance().getBuffer();
 
-        readBuffer = bufferReader.read(readBuffer);
+        if(bufferReader.read(readBuffer) < 0){
+            connectionLost();
+            return;
+        }
 
         while (readBuffer.remaining() != -1) {
             byte mType = readBuffer.get();
@@ -111,7 +114,10 @@ public class BlockingConnection implements IConnection {
         BufferReader bufferReader = new BufferReaderImpl(clientChannel);
         ByteBuffer readBuffer = SingletonBuffer.getInstance().getBuffer();
 
-        readBuffer = bufferReader.read(readBuffer);
+        if(bufferReader.read(readBuffer) < 0){
+            connectionLost();
+            return null;
+        }
 
         while (readBuffer.remaining() != -1) {
             byte mType = readBuffer.get();
@@ -171,7 +177,10 @@ public class BlockingConnection implements IConnection {
         BufferReader bufferReader = new BufferReaderImpl(clientChannel);
         ByteBuffer readBuffer = SingletonBuffer.getInstance().getBuffer();
 
-        readBuffer = bufferReader.read(readBuffer);
+        if(bufferReader.read(readBuffer) < 0){
+            connectionLost();
+            return null;
+        }
         CommandDataDescriptor result_cdd = null;
 
         while (readBuffer.hasRemaining()) {
@@ -300,7 +309,10 @@ public class BlockingConnection implements IConnection {
         BufferReader bufferReader = new BufferReaderImpl(getChannel());
         ByteBuffer readBuffer = SingletonBuffer.getInstance().getBuffer();
 
-        readBuffer = bufferReader.read(readBuffer);
+        if(bufferReader.read(readBuffer) < 0){
+            connectionLost();
+            return null;
+        }
 
         ResultSet resultSet = new ResultSetImpl();
         while (readBuffer.hasRemaining()) {
@@ -393,8 +405,10 @@ public class BlockingConnection implements IConnection {
 
         ByteBuffer readBuffer = SingletonBuffer.getInstance().getBuffer();
         BufferReader bufferReader = new BufferReaderImpl(getChannel());
-        readBuffer = bufferReader.read(readBuffer);
-
+        if(bufferReader.read(readBuffer) < 0){
+            connectionLost();
+            return;
+        }
 
         while (readBuffer.hasRemaining()) {
             byte mType = readBuffer.get();
@@ -452,8 +466,10 @@ public class BlockingConnection implements IConnection {
 
         ByteBuffer readBuffer = SingletonBuffer.getInstance().getBuffer();
         BufferReader bufferReader = new BufferReaderImpl(getChannel());
-        readBuffer = bufferReader.read(readBuffer);
-
+        if(bufferReader.read(readBuffer) < 0){
+            connectionLost();
+            return;
+        }
 
         while (readBuffer.hasRemaining()) {
             byte mType = readBuffer.get();
@@ -480,7 +496,10 @@ public class BlockingConnection implements IConnection {
     }
 
     private <T extends ServerProtocolBehaviour> void readClientFinalMessage(ByteBuffer readBuffer, BufferReader bufferReader) throws IOException {
-        readBuffer = bufferReader.read(readBuffer);
+        if(bufferReader.read(readBuffer) < 0){
+            connectionLost();
+            return;
+        }
         while (readBuffer.hasRemaining()) {
             byte mType = readBuffer.get();
             ProtocolReader reader = new ChannelProtocolReaderFactoryImpl(readBuffer)
@@ -509,5 +528,9 @@ public class BlockingConnection implements IConnection {
     @Override
     public SocketChannel getChannel() {
         return this.clientChannel;
+    }
+
+    protected void connectionLost(){
+
     }
 }

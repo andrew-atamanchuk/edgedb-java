@@ -150,8 +150,11 @@ public class NonBlockingConnection implements IConnection {
         boolean is_finished = false;
 
         while (!is_finished) {
-            readBuffer = bufferReader.read(readBuffer);
-
+            if(bufferReader.read(readBuffer) < 0){
+                is_finished = true;
+                connectionLost();
+                break;
+            }
 
             while (readBuffer.hasRemaining()) {
                 byte mType = readBuffer.get();
@@ -227,7 +230,11 @@ public class NonBlockingConnection implements IConnection {
         boolean is_finished = false;
 
         while (!is_finished) {
-            readBuffer = bufferReader.read(readBuffer);
+            if(bufferReader.read(readBuffer) < 0){
+                is_finished = true;
+                connectionLost();
+                break;
+            }
 
             while (readBuffer.hasRemaining()) {
                 byte mType = readBuffer.get();
@@ -275,7 +282,11 @@ public class NonBlockingConnection implements IConnection {
         boolean is_finished = false;
 
         while (!is_finished) {
-            readBuffer = bufferReader.read(readBuffer);
+            if(bufferReader.read(readBuffer) < 0){
+                is_finished = true;
+                connectionLost();
+                break;
+            }
 
             while (readBuffer.hasRemaining()) {
                 byte mType = readBuffer.get();
@@ -329,7 +340,12 @@ public class NonBlockingConnection implements IConnection {
         boolean is_finished = false;
 
         while (!is_finished) {
-            readBuffer = bufferReader.read(readBuffer);
+            if(bufferReader.read(readBuffer) < 0){
+                is_finished = true;
+                connectionLost();
+                break;
+            }
+
             while (readBuffer.hasRemaining()) {
                 byte mType = readBuffer.get();
                 if (readBuffer.remaining() >= 4) {
@@ -414,7 +430,11 @@ public class NonBlockingConnection implements IConnection {
         boolean is_finished = false;
 
         while (!is_finished) {
-            readBuffer = bufferReader.read(readBuffer);
+            if(bufferReader.read(readBuffer) < 0){
+                is_finished = true;
+                connectionLost();
+                break;
+            }
 
             while (readBuffer.hasRemaining()) {
                 byte mType = readBuffer.get();
@@ -476,6 +496,9 @@ public class NonBlockingConnection implements IConnection {
             readBuffer.compact();
         }
         return resultSet;
+    }
+
+    private void connectionLost(){
 
     }
 }
