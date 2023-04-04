@@ -7,6 +7,7 @@ public final class MessageType {
 
     public static final char CLIENT_HANDSHAKE = 'V';
     public static final char SYNC_MESSAGE = 'S';
+    public static final char PARAMETER_STATUS = 'S';
 
     public static final char SERVER_HANDSHAKE = 'v';
     public static final char SERVER_AUTHENTICATION = 'R';
@@ -27,6 +28,6 @@ public final class MessageType {
     public static final char TERMINATE = 'X';
 
     public static final char DATA_RESPONSE = 'D';
-
+    public static final char STATE_DATA_DESCRIPTION = 's';
 
 }

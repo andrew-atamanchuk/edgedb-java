@@ -23,6 +23,7 @@ public class SingletonBuffer {
     }
 
     public ByteBuffer getBuffer() {
+        buffer.clear();
         return buffer;
     }
 }

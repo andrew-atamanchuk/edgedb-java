@@ -3,6 +3,7 @@ package edgedb.client;
 
 import edgedb.connection.BlockingConnection;
 import edgedb.connection.IConnection;
+import edgedb.connection.NonBlockingConnection;
 import edgedb.connectionparams.ConnectionParams;
 import edgedb.internal.protocol.CommandDataDescriptor;
 import edgedb.internal.protocol.DataElement;
@@ -127,11 +128,13 @@ public class EdgeDBClientV2Test {
     }
 
     public void TestParseExecuteV2(){
-        EdgeDBClientV2 clientV2 = new EdgeDBClientV2(new BlockingConnection());
+        EdgeDBClientV2 clientV2 = new EdgeDBClientV2(new NonBlockingConnection());
         String query = "select Person {id, name, last_name, profession, birth, age, best_friend}";
         query = "select Person {name, last_name, best_friend :{name, last_name}, bags :{name, volume, @ownership, @order}}";
         query = "select Person {name, books, color, number, bags :{name, volume, @ownership}} filter .name = 'Kolia-1'";
         query = "select Person {name, values, metadata, tuple_of_arrays, nested_tuple, unnamed_tuple} filter .profession = <str>$param1";
+
+        query = "select Bag {name, volume} filter .volume > <int32>$param1 limit 2262";
 
 //        query = "update default::Person \n" +
 //                "filter .name = \"Kolia-3\"\n" +
@@ -164,26 +167,35 @@ public class EdgeDBClientV2Test {
                 return;
 
             ObjectShapeDescriptor obj_shape_desc = (ObjectShapeDescriptor) super_query1.getInputRootTypeDescriptor();
-            ByteBuffer in_bb = ByteBuffer.allocate(2000);
+            ByteBuffer in_bb = ByteBuffer.allocate(20000);
             Map<String, Object> values = new HashMap<>();
-            values.put("param1", "student");
+            values.put("param1", -1);
             IDataContainer container = fillData(obj_shape_desc, values);
             obj_shape_desc.encodeData(in_bb, container);
             in_bb.flip();
 
             ResultSet result = connection.sendExecuteV2(super_query1, in_bb);
             printResult(super_query1, result);
+            System.out.println("Count of data elements in response: " + ((ResultSetImpl)result).getDataResponses().size());
 
-            ObjectShapeDescriptor obj_shape_desc2 = (ObjectShapeDescriptor) super_query2.getInputRootTypeDescriptor();
-            in_bb.clear();
-            values.clear();
-            values.put("name", "test_bag");
-            values.put("volume", 44);
-            IDataContainer container2 = fillData(obj_shape_desc2, values);
-            obj_shape_desc2.encodeData(in_bb, container2);
-            in_bb.flip();
+            if(true)
+                return;
+            for (int i = 0; i < 2000; i++) {
+                ObjectShapeDescriptor obj_shape_desc2 = (ObjectShapeDescriptor) super_query2.getInputRootTypeDescriptor();
+                in_bb.clear();
+                values.clear();
+                byte[] name_arr = new byte[20];
+                for (int m = 0; m < name_arr.length; m++)
+                    name_arr[m] = (byte)(Math.random() * 25 + 65);
 
-            result = connection.sendExecuteV2(super_query2, in_bb);
+                values.put("name", new String(name_arr, 0, name_arr.length));
+                values.put("volume", (int)(Math.random() * 300));
+                IDataContainer container2 = fillData(obj_shape_desc2, values);
+                obj_shape_desc2.encodeData(in_bb, container2);
+                in_bb.flip();
+
+                result = connection.sendExecuteV2(super_query2, in_bb);
+            }
             printResult(super_query2, result);
 
 

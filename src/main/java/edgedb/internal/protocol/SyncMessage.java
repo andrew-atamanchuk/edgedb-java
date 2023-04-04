@@ -2,6 +2,7 @@ package edgedb.internal.protocol;
 
 import edgedb.internal.protocol.client.writerV2.BufferWritable;
 import edgedb.internal.protocol.client.writerhelper.*;
+import edgedb.internal.protocol.server.readerv2.ProtocolReader;
 import edgedb.internal.protocol.utility.MessageLengthCalculator;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +14,7 @@ import static edgedb.internal.protocol.constants.MessageType.SYNC_MESSAGE;
 
 @Data
 @Slf4j
-public class SyncMessage implements BufferWritable, ClientProtocolBehaviour {
+public class SyncMessage implements BufferWritable, ClientProtocolBehaviour,ServerProtocolBehaviour {
     byte mType = (int) SYNC_MESSAGE;
     int messageLength;
 
@@ -37,4 +38,5 @@ public class SyncMessage implements BufferWritable, ClientProtocolBehaviour {
         helper.writeUint32(messageLength);
         return writeBuf;
     }
+
 }

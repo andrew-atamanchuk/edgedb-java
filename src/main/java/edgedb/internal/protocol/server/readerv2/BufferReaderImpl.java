@@ -20,10 +20,10 @@ public class BufferReaderImpl implements BufferReader {
         log.info("Trying to readInto buffer.");
 
         try {
-            readInto.clear();
+            //readInto.clear();
             int byteReceived;
-            // ByteBuffer sampleReadInto = ByteBuffer.allocate(BUFFER_SIZE);
-            while ((byteReceived = channel.read(readInto)) == -1) ;
+            while ((byteReceived = channel.read(readInto)) == -1);
+            //byteReceived = channel.read(readInto);
             readInto.flip();
             log.info("Total byte Received {}", byteReceived);
             return readInto;

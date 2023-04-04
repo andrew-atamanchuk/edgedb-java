@@ -1,6 +1,5 @@
 package edgedb.internal.protocol.server.readerfactory;
 
-import edgedb.exceptions.EdgeDBInternalErrException;
 import edgedb.internal.protocol.server.readerhelper.IReaderHelper;
 import edgedb.internal.protocol.server.readerhelper.ChannelReaderHelperImpl;
 import edgedb.internal.protocol.server.readerv2.*;
@@ -8,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
 
-import static edgedb.exceptions.ErrorMessage.FAILED_TO_DECODE_SERVER_RESPONSE;
 import static edgedb.internal.protocol.constants.MessageType.*;
 import static edgedb.internal.protocol.constants.MessageType.ERROR_RESPONSE;
 
@@ -42,6 +40,10 @@ public class ChannelProtocolReaderFactoryImpl implements ProtocolReaderFactory{
                 return new ErrorResponseReaderV2(readerHelper);
             case (int) COMMAND_DATA_DESCRIPTOR:
                 return new CommandDataDescriptionReaderV2(readerHelper);
+            case (int) STATE_DATA_DESCRIPTION:
+                return new StateDataDescriptorReaderV2(readerHelper);
+            case (int) PARAMETER_STATUS:
+                return new ParameterStatusReaderV2(readerHelper);
         }
         return null;
     }
