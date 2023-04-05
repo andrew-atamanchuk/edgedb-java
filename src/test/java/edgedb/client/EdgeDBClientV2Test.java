@@ -3,10 +3,12 @@ package edgedb.client;
 
 import edgedb.connection.BlockingConnection;
 import edgedb.connection.IConnection;
+import edgedb.connection.NonBlockingConnection;
 import edgedb.connectionparams.ConnectionParams;
 import edgedb.internal.protocol.CommandDataDescriptor;
 import edgedb.internal.protocol.DataElement;
 import edgedb.internal.protocol.DataResponse;
+import edgedb.internal.protocol.SuperQuery;
 import edgedb.internal.protocol.constants.Cardinality;
 import edgedb.internal.protocol.constants.IOFormat;
 import edgedb.internal.protocol.typedescriptor.*;
@@ -67,6 +69,9 @@ public class EdgeDBClientV2Test {
 
         query = "INSERT Bag { name := <str>$name, volume := <int32>$volume }";
 
+        SuperQuery super_query = new SuperQuery();
+        super_query.command = query;
+
         ConnectionParams cp = new ConnectionParams();
         cp.setPort(10705);
 
@@ -91,10 +96,9 @@ public class EdgeDBClientV2Test {
             }
 
             if(result instanceof ResultSetImpl){
-                TypeDecoderFactoryImpl tdf = new TypeDecoderFactoryImpl();
                 CommandDataDescriptor cdd = ((ResultSetImpl) result).getCommandDataDescriptor();
                 if(cdd != null) {
-                    tdf.decodeDescriptors(cdd);
+                    super_query.decodeCommandDataDescriptors(cdd);
                 }
 
                 ArrayList<IDataContainer> result_arr = new ArrayList<>();
@@ -104,7 +108,7 @@ public class EdgeDBClientV2Test {
                             //log.info("DataElement: " + new String(elem.getDataElement()));
                             ByteBuffer bb = ByteBuffer.wrap(elem.getDataElement());
 
-                            TypeDescriptor root_desc = tdf.getOutputRootTypeDescriptor();
+                            TypeDescriptor root_desc = super_query.getOutputRootTypeDescriptor();
                             result_arr.add(root_desc.decodeData(bb, bb.remaining()));
                         }
                     }
@@ -124,11 +128,13 @@ public class EdgeDBClientV2Test {
     }
 
     public void TestParseExecuteV2(){
-        EdgeDBClientV2 clientV2 = new EdgeDBClientV2(new BlockingConnection());
+        EdgeDBClientV2 clientV2 = new EdgeDBClientV2(new NonBlockingConnection());
         String query = "select Person {id, name, last_name, profession, birth, age, best_friend}";
         query = "select Person {name, last_name, best_friend :{name, last_name}, bags :{name, volume, @ownership, @order}}";
         query = "select Person {name, books, color, number, bags :{name, volume, @ownership}} filter .name = 'Kolia-1'";
-        query = "select Person {name, values, metadata, tuple_of_arrays, nested_tuple, unnamed_tuple} filter .number = <posint64>$param1";
+        query = "select Person {name, values, metadata, tuple_of_arrays, nested_tuple, unnamed_tuple} filter .profession = <str>$param1";
+
+        query = "select Bag {name, volume} filter .volume > <int32>$param1 limit 2262";
 
 //        query = "update default::Person \n" +
 //                "filter .name = \"Kolia-3\"\n" +
@@ -138,74 +144,79 @@ public class EdgeDBClientV2Test {
 
         String query2 = "INSERT Bag { name := <str>$name, volume := <int32>$volume }";
 
+        SuperQuery super_query1 = new SuperQuery();
+        super_query1.command = query;
+        super_query1.output_format = IOFormat.BINARY;
+        super_query1.cardinality = Cardinality.MANY;
+
+        SuperQuery super_query2 = new SuperQuery();
+        super_query2.command = query2;
+        super_query2.output_format = IOFormat.JSON;
+        super_query2.cardinality = Cardinality.ONE;
+
         ConnectionParams cp = new ConnectionParams();
-        cp.setPort(10705);
+        cp.setPort(10700);
 
         try{
             IConnection connection = clientV2.getConnection(cp);
-            char out_format = IOFormat.BINARY;
-            char out_format2 = IOFormat.JSON_ELEMENTS;
 
-            CommandDataDescriptor cdd = connection.sendParseV2(out_format, Cardinality.MANY, query);
-
-            CommandDataDescriptor cdd2 = connection.sendParseV2(out_format2, Cardinality.MANY, query2);
-
-            TypeDecoderFactoryImpl tdf = new TypeDecoderFactoryImpl();
-            if(cdd == null) {
+            if(!super_query1.decodeCommandDataDescriptors(connection.sendParseV2(super_query1)))
                 return;
-            }
-            tdf.decodeDescriptors(cdd);
 
-            TypeDecoderFactoryImpl tdf2 = new TypeDecoderFactoryImpl();
-            if(cdd2 == null) {
+            if(!super_query2.decodeCommandDataDescriptors(connection.sendParseV2(super_query2)))
                 return;
-            }
-            tdf2.decodeDescriptors(cdd2);
 
-            ObjectShapeDescriptor obj_shape_desc = (ObjectShapeDescriptor) tdf.getInputRootTypeDescriptor();
-            ByteBuffer in_bb = ByteBuffer.allocate(2000);
+            ObjectShapeDescriptor obj_shape_desc = (ObjectShapeDescriptor) super_query1.getInputRootTypeDescriptor();
+            ByteBuffer in_bb = ByteBuffer.allocate(20000);
             Map<String, Object> values = new HashMap<>();
-            values.put("param1", 4L);
+            values.put("param1", -1);
             IDataContainer container = fillData(obj_shape_desc, values);
             obj_shape_desc.encodeData(in_bb, container);
             in_bb.flip();
 
-            ResultSet result = connection.sendExecuteV2(out_format, Cardinality.ONE, query, cdd.getInput_typedesc_id(), cdd.getOutput_typedesc_id(), in_bb);
-            printResult(out_format, result, tdf);
+            ResultSet result = connection.sendExecuteV2(super_query1, in_bb);
+            printResult(super_query1, result);
+            System.out.println("Count of data elements in response: " + ((ResultSetImpl)result).getDataResponses().size());
 
-            ObjectShapeDescriptor obj_shape_desc2 = (ObjectShapeDescriptor) tdf2.getInputRootTypeDescriptor();
+            if(true)
+                return;
+            for (int i = 0; i < 2000; i++) {
+                ObjectShapeDescriptor obj_shape_desc2 = (ObjectShapeDescriptor) super_query2.getInputRootTypeDescriptor();
+                in_bb.clear();
+                values.clear();
+                byte[] name_arr = new byte[20];
+                for (int m = 0; m < name_arr.length; m++)
+                    name_arr[m] = (byte)(Math.random() * 25 + 65);
+
+                values.put("name", new String(name_arr, 0, name_arr.length));
+                values.put("volume", (int)(Math.random() * 300));
+                IDataContainer container2 = fillData(obj_shape_desc2, values);
+                obj_shape_desc2.encodeData(in_bb, container2);
+                in_bb.flip();
+
+                result = connection.sendExecuteV2(super_query2, in_bb);
+            }
+            printResult(super_query2, result);
+
+
             in_bb.clear();
             values.clear();
-            values.put("name", "test_bag");
-            values.put("volume", 44);
-            IDataContainer container2 = fillData(obj_shape_desc2, values);
-            obj_shape_desc2.encodeData(in_bb, container2);
-            in_bb.flip();
-
-            result = connection.sendExecuteV2(out_format2, Cardinality.MANY, query2, cdd2.getInput_typedesc_id(), cdd2.getOutput_typedesc_id(), in_bb);
-            printResult(out_format2, result, tdf2);
-
-
-            in_bb.clear();
-            values.clear();
-            values.put("param1", 6L);
+            values.put("param1", "qwer");
             container = fillData(obj_shape_desc, values);
             obj_shape_desc.encodeData(in_bb, container);
             in_bb.flip();
 
-            result = connection.sendExecuteV2(out_format, Cardinality.MANY, query, cdd.getInput_typedesc_id(), cdd.getOutput_typedesc_id(), in_bb);
-            printResult(out_format, result, tdf);
+            result = connection.sendExecuteV2(super_query1, in_bb);
+            printResult(super_query1, result);
             in_bb.flip();
-
-            result = connection.sendExecuteV2(out_format, Cardinality.MANY, query, cdd.getInput_typedesc_id(), cdd.getOutput_typedesc_id(), in_bb);
 
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void printResult(char out_format, ResultSet result, TypeDecoderFactoryImpl tdf){
-        if(out_format == IOFormat.JSON_ELEMENTS) {
+    public void printResult(SuperQuery sq, ResultSet result){
+        if(sq.outputFormat() == IOFormat.JSON_ELEMENTS || sq.outputFormat() == IOFormat.JSON) {
             for(DataResponse resp : ((ResultSetImpl) result).getDataResponses()) {
                 if (resp != null && resp.getDataLength() > 0) {
                     for (DataElement elem : resp.getDataElements()) {
@@ -221,7 +232,7 @@ public class EdgeDBClientV2Test {
                     for(DataElement elem : resp.getDataElements()){
                         ByteBuffer bb = ByteBuffer.wrap(elem.getDataElement());
 
-                        TypeDescriptor root_desc = tdf.getOutputRootTypeDescriptor();
+                        TypeDescriptor root_desc = sq.getOutputRootTypeDescriptor();
                         result_arr.add(root_desc.decodeData(bb, bb.remaining()));
                     }
                 }

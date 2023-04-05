@@ -23,6 +23,7 @@ import edgedb.internal.protocol.constants.Cardinality;
 import edgedb.internal.protocol.constants.IOFormat;
 import edgedb.internal.protocol.server.readerfactory.ChannelProtocolReaderFactoryImpl;
 import edgedb.internal.protocol.server.readerv2.*;
+import edgedb.internal.protocol.typedescriptor.decoder.ITypeDescriptorHolder;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -83,7 +84,10 @@ public class BlockingConnection implements IConnection {
         BufferReader bufferReader = new BufferReaderImpl(clientChannel);
         ByteBuffer readBuffer = SingletonBuffer.getInstance().getBuffer();
 
-        readBuffer = bufferReader.read(readBuffer);
+        if(bufferReader.read(readBuffer) < 0){
+            connectionLost();
+            return;
+        }
 
         while (readBuffer.remaining() != -1) {
             byte mType = readBuffer.get();
@@ -110,7 +114,10 @@ public class BlockingConnection implements IConnection {
         BufferReader bufferReader = new BufferReaderImpl(clientChannel);
         ByteBuffer readBuffer = SingletonBuffer.getInstance().getBuffer();
 
-        readBuffer = bufferReader.read(readBuffer);
+        if(bufferReader.read(readBuffer) < 0){
+            connectionLost();
+            return null;
+        }
 
         while (readBuffer.remaining() != -1) {
             byte mType = readBuffer.get();
@@ -170,7 +177,10 @@ public class BlockingConnection implements IConnection {
         BufferReader bufferReader = new BufferReaderImpl(clientChannel);
         ByteBuffer readBuffer = SingletonBuffer.getInstance().getBuffer();
 
-        readBuffer = bufferReader.read(readBuffer);
+        if(bufferReader.read(readBuffer) < 0){
+            connectionLost();
+            return null;
+        }
         CommandDataDescriptor result_cdd = null;
 
         while (readBuffer.hasRemaining()) {
@@ -268,26 +278,26 @@ public class BlockingConnection implements IConnection {
 
 
     @Override
-    public CommandDataDescriptor sendParseV2(char IOFormat, char cardinality, String command){
+    public CommandDataDescriptor sendParseV2(ITypeDescriptorHolder desc_holder){
         granularFlowPipe = new GranularFlowPipeV2(
                 new ChannelProtocolWritableImpl(getChannel()));
 
-        Prepare prepareMessage = new Prepare(IOFormat, cardinality, command);
+        Prepare prepareMessage = new Prepare(desc_holder.outputFormat(), desc_holder.cardinality(), desc_holder.command());
         granularFlowPipe.sendPrepareMessage(prepareMessage);
 
         return readCommandDataDescriptor(granularFlowPipe, prepareMessage);
     }
 
     @Override
-    public ResultSet sendExecuteV2(char IOFormat, char cardinality, String command, UUID input_typedesc_id, UUID output_typedesc_id, ByteBuffer args_bb) {
+    public ResultSet sendExecuteV2(ITypeDescriptorHolder desc_holder, ByteBuffer args_bb) {
         if(granularFlowPipe == null) {
             granularFlowPipe = new GranularFlowPipeV2(
                     new ChannelProtocolWritableImpl(getChannel()));
         }
 
-        ExecuteV2 exec_message = new ExecuteV2(IOFormat, cardinality, command);
-        exec_message.setInput_typedesc_id(input_typedesc_id == null ? new UUID(0, 0) : input_typedesc_id);
-        exec_message.setOutput_typedesc_id(output_typedesc_id == null ? new UUID(0, 0) : output_typedesc_id);
+        ExecuteV2 exec_message = new ExecuteV2(desc_holder.outputFormat(), desc_holder.cardinality(), desc_holder.command());
+        exec_message.setInput_typedesc_id(desc_holder.getInputTypeDescId() == null ? new UUID(0, 0) : desc_holder.getInputTypeDescId());
+        exec_message.setOutput_typedesc_id(desc_holder.getOutputTypeDescId() == null ? new UUID(0, 0) : desc_holder.getOutputTypeDescId());
         exec_message.setArguments(args_bb);
         granularFlowPipe.sendExecuteMessageV2(exec_message);
         return readDataResponse();
@@ -299,7 +309,10 @@ public class BlockingConnection implements IConnection {
         BufferReader bufferReader = new BufferReaderImpl(getChannel());
         ByteBuffer readBuffer = SingletonBuffer.getInstance().getBuffer();
 
-        readBuffer = bufferReader.read(readBuffer);
+        if(bufferReader.read(readBuffer) < 0){
+            connectionLost();
+            return null;
+        }
 
         ResultSet resultSet = new ResultSetImpl();
         while (readBuffer.hasRemaining()) {
@@ -392,8 +405,10 @@ public class BlockingConnection implements IConnection {
 
         ByteBuffer readBuffer = SingletonBuffer.getInstance().getBuffer();
         BufferReader bufferReader = new BufferReaderImpl(getChannel());
-        readBuffer = bufferReader.read(readBuffer);
-
+        if(bufferReader.read(readBuffer) < 0){
+            connectionLost();
+            return;
+        }
 
         while (readBuffer.hasRemaining()) {
             byte mType = readBuffer.get();
@@ -451,8 +466,10 @@ public class BlockingConnection implements IConnection {
 
         ByteBuffer readBuffer = SingletonBuffer.getInstance().getBuffer();
         BufferReader bufferReader = new BufferReaderImpl(getChannel());
-        readBuffer = bufferReader.read(readBuffer);
-
+        if(bufferReader.read(readBuffer) < 0){
+            connectionLost();
+            return;
+        }
 
         while (readBuffer.hasRemaining()) {
             byte mType = readBuffer.get();
@@ -479,7 +496,10 @@ public class BlockingConnection implements IConnection {
     }
 
     private <T extends ServerProtocolBehaviour> void readClientFinalMessage(ByteBuffer readBuffer, BufferReader bufferReader) throws IOException {
-        readBuffer = bufferReader.read(readBuffer);
+        if(bufferReader.read(readBuffer) < 0){
+            connectionLost();
+            return;
+        }
         while (readBuffer.hasRemaining()) {
             byte mType = readBuffer.get();
             ProtocolReader reader = new ChannelProtocolReaderFactoryImpl(readBuffer)
@@ -508,5 +528,9 @@ public class BlockingConnection implements IConnection {
     @Override
     public SocketChannel getChannel() {
         return this.clientChannel;
+    }
+
+    protected void connectionLost(){
+
     }
 }

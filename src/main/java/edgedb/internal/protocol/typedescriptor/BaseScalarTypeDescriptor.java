@@ -1,5 +1,6 @@
 package edgedb.internal.protocol.typedescriptor;
 
+import edgedb.exceptions.ScalarTypeNotFoundException;
 import edgedb.internal.protocol.typedescriptor.decoder.TypeDecoderFactoryImpl;
 import edgedb.internal.protocol.utility.UUIDUtils;
 import java.util.UUID;
@@ -22,13 +23,14 @@ public class BaseScalarTypeDescriptor extends TypeDescriptor {
         if(!super.parse(bb))
             return false;
 
-        IDescType temp_type = TypeDecoderFactoryImpl.scalar_type_decoder.decode(id);
-        if(temp_type instanceof BaseScalarType){
-            scalar_type = (BaseScalarType)temp_type;
-            return true;
+        try {
+            scalar_type = TypeDecoderFactoryImpl.scalar_type_decoder.decode(id);
         }
-
-        return false;
+        catch (ScalarTypeNotFoundException e){
+            e.printStackTrace();
+            return false;
+        }
+        return true;
     }
 
     @Override

@@ -3,6 +3,7 @@ package edgedb.internal.protocol.server.readerv2;
 import edgedb.internal.protocol.CommandComplete;
 import edgedb.internal.protocol.Header;
 import edgedb.internal.protocol.server.readerhelper.IReaderHelper;
+import edgedb.internal.protocol.utility.UUIDUtils;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -23,13 +24,18 @@ public class CommandCompleteReaderV2 implements ProtocolReader {
         readerHelper.setMessageLength(messageLength);
 
         short headerLength = readerHelper.readUint16();
-        commandComplete.setHeadersLength(headerLength);
+        commandComplete.setNumAnnotations(headerLength);
         Header[] headers = new Header[headerLength];
         HeaderReader headerReader = new HeaderReader(readerHelper);
         for (int i = 0; i < headerLength; i++) {
             headers[i] = headerReader.read(readBuffer);
         }
+        commandComplete.setAnnotations(headers);
+        commandComplete.setCapabilities(readerHelper.readUint64());
         commandComplete.setStatus(readerHelper.readString());
+        commandComplete.setStateTypedescId(UUIDUtils.convertBytesToUUID(readerHelper.readUUID()));
+        commandComplete.setStateData(readerHelper.readBytes());
+
         return commandComplete;
     }
 }

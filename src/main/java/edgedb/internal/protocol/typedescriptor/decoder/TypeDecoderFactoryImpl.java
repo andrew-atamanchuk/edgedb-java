@@ -7,114 +7,41 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.UUID;
 
-public class TypeDecoderFactoryImpl implements TypeDecoderFactory, ITypeDescriptorHolder, IDataContainerFactory<DataContainerImpl> {
+public class TypeDecoderFactoryImpl implements TypeDecoderFactory, IDataContainerFactory<DataContainerImpl> {
 
-    public static KnownTypeDecoder scalar_type_decoder = new KnownTypeDecoder();
+    public static KnownTypeDecoder<BaseScalarType> scalar_type_decoder = new KnownTypeDecoder();
 
-    UUID input_typedesc_id = null;
-    private ArrayList<TypeDescriptor> input_desc_list = new ArrayList<>();
 
-    UUID output_typedesc_id = null;
-    private ArrayList<TypeDescriptor> output_desc_list = new ArrayList<>();
-
-    private ObjectShapeDescriptor output_root_osd = null;
-    private ObjectShapeDescriptor input_root_osd = null;
-
-    @Override
-    public TypeDescriptor getInputRootTypeDescriptor() {
-        return input_root_osd;
-    }
-
-    @Override
-    public TypeDescriptor getOutputRootTypeDescriptor() {
-        return output_root_osd;
-    }
-
-    @Override
-    public TypeDescriptor getInputTypeDescriptor(int index) {
-        if(index < 0 || input_desc_list.size() <= index)
-            return null;
-
-        return input_desc_list.get(index);
-    }
-
-    @Override
-    public TypeDescriptor getOutputTypeDescriptor(int index) {
-        if(index < 0 || output_desc_list.size() <= index)
-            return null;
-
-        return output_desc_list.get(index);
-    }
-
-    @Override
-    public void setInputTypeDescId(UUID uuid){
-        this.input_typedesc_id = uuid;
-    }
-
-    @Override
-    public void setOutputTypeDescId(UUID uuid){
-        this.output_typedesc_id = uuid;
-    }
-
-    @Override
-    public UUID getInputTypeDescId(){
-        return input_typedesc_id;
-    }
-
-    @Override
-    public UUID getOutputTypeDescId(){
-        return output_typedesc_id;
-    }
-
-    public boolean decodeDescriptors(CommandDataDescriptor cdd){
+    public boolean decodeDescriptors(CommandDataDescriptor cdd, ITypeDescriptorHolder type_desc_holder){
         try {
             ByteBuffer bb = ByteBuffer.wrap(cdd.getInput_typedesc());
-            decodeInputDescriptors(bb);
+            while(bb.hasRemaining()){
+                TypeDescriptor desc = parseTypeDescriptor(bb);
+                if(desc != null){
+                    desc.setDescriptorHolder(type_desc_holder);
+                    desc.setDataContainerFactory(this);
+                    type_desc_holder.addInputTypeDescriptor(desc);
+                }
+            }
+
             bb = ByteBuffer.wrap(cdd.getOutput_typedesc());
-            decodeOutputDescriptors(bb);
+            while(bb.hasRemaining()){
+                TypeDescriptor desc = parseTypeDescriptor(bb);
+                if(desc != null){
+                    desc.setDescriptorHolder(type_desc_holder);
+                    desc.setDataContainerFactory(this);
+                    type_desc_holder.addOutputTypeDescriptor(desc);
+                }
+            }
         }
         catch (Exception e){
             e.printStackTrace();
             return false;
         }
-        setInputTypeDescId(cdd.getInput_typedesc_id());
-        setOutputTypeDescId(cdd.getOutput_typedesc_id());
         return true;
     }
 
-    @Override
-    public boolean decodeInputDescriptors(ByteBuffer bb) {
-        while(bb.hasRemaining()){
-            TypeDescriptor desc = parseTypeDescriptor(bb);
-            if(desc != null){
-                desc.setDescriptorHolder(this);
-                desc.setDataContainerFactory(this);
-                input_desc_list.add(desc);
-                if(desc instanceof ObjectShapeDescriptor)
-                    input_root_osd = (ObjectShapeDescriptor)desc;
-            }
-        }
-
-        return true;
-    }
-
-    @Override
-    public boolean decodeOutputDescriptors(ByteBuffer bb) {
-        while(bb.hasRemaining()){
-            TypeDescriptor desc = parseTypeDescriptor(bb);
-            if(desc != null){
-                desc.setDescriptorHolder(this);
-                desc.setDataContainerFactory(this);
-                output_desc_list.add(desc);
-                if(desc instanceof ObjectShapeDescriptor)
-                    output_root_osd = (ObjectShapeDescriptor)desc;
-            }
-        }
-
-        return true;
-    }
-
-    private TypeDescriptor parseTypeDescriptor(ByteBuffer bb) throws TypeNotPresentException {
+    private static TypeDescriptor parseTypeDescriptor(ByteBuffer bb) throws TypeNotPresentException {
         TypeDescriptor desc = null;
         int bb_pos = 0;
         try {

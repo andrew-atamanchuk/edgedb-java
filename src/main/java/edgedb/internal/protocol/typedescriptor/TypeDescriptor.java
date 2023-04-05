@@ -10,7 +10,7 @@ import java.util.UUID;
 public abstract class TypeDescriptor implements IDescType {
 
 
-    protected ITypeDescriptorHolder descriptor_holder = null;
+    protected ITypeDescriptorHolder<TypeDescriptor> descriptor_holder = null;
     protected final byte type;
     protected byte[] id = new byte[Long.SIZE * 2 / Byte.SIZE];
     protected UUID uuid;
