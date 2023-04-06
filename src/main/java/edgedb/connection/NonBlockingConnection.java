@@ -42,6 +42,8 @@ public class NonBlockingConnection implements IConnection {
     Selector selector;
     byte[] serverKey;
 
+    public int connection_timeout =  3000;
+    public int reading_timeout = 3000;
     private IGranularFlowPipe granularFlowPipe = null;
     ConnectionParams connectionParams;
 
@@ -60,11 +62,15 @@ public class NonBlockingConnection implements IConnection {
         clientChannel = SocketChannel.open();
         clientChannel.configureBlocking(false);
 
+        long start_connection_time = System.currentTimeMillis();
         if (!clientChannel.connect(new InetSocketAddress(connectionParams.getHost(), connectionParams.getPort()))) {
             log.info("Trying to connect ...");
-            while (!clientChannel.finishConnect());
+            while (!clientChannel.finishConnect() && start_connection_time + connection_timeout > System.currentTimeMillis());
 
-            log.info("Connection Successful....");
+            if(clientChannel.isConnected())
+                log.info("Connection Successful....");
+            else
+                log.info("Connection in process....");
         }
 
         selector = Selector.open();
@@ -117,28 +123,48 @@ public class NonBlockingConnection implements IConnection {
 
     @Override
     public CommandDataDescriptor sendParseV2(ITypeDescriptorHolder desc_holder) {
-        granularFlowPipe = new GranularFlowPipeV2(
-                new ChannelProtocolWritableImpl(getChannel()));
+        if(!getChannel().isConnected())
+            return null;
 
-        Prepare prepareMessage = new Prepare(desc_holder.outputFormat(), desc_holder.cardinality(), desc_holder.command());
-        granularFlowPipe.sendPrepareMessage(prepareMessage);
-
-        return readCommandDataDescriptor(granularFlowPipe, prepareMessage);
-    }
-
-    @Override
-    public ResultSet sendExecuteV2(ITypeDescriptorHolder desc_holder, ByteBuffer args_bb) {
         if(granularFlowPipe == null) {
             granularFlowPipe = new GranularFlowPipeV2(
                     new ChannelProtocolWritableImpl(getChannel()));
         }
 
-        ExecuteV2 exec_message = new ExecuteV2(desc_holder.outputFormat(), desc_holder.cardinality(), desc_holder.command());
-        exec_message.setInput_typedesc_id(desc_holder.getInputTypeDescId() == null ? new UUID(0, 0) : desc_holder.getInputTypeDescId());
-        exec_message.setOutput_typedesc_id(desc_holder.getOutputTypeDescId() == null ? new UUID(0, 0) : desc_holder.getOutputTypeDescId());
-        exec_message.setArguments(args_bb);
-        granularFlowPipe.sendExecuteMessageV2(exec_message);
-        return readDataResponse();
+        try {
+            Prepare prepareMessage = new Prepare(desc_holder.outputFormat(), desc_holder.cardinality(), desc_holder.command());
+            granularFlowPipe.sendPrepareMessage(prepareMessage);
+
+            return readCommandDataDescriptor(granularFlowPipe, prepareMessage);
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    @Override
+    public ResultSet sendExecuteV2(ITypeDescriptorHolder desc_holder, ByteBuffer args_bb) {
+        if(!getChannel().isConnected())
+            return null;
+
+        if(granularFlowPipe == null) {
+            granularFlowPipe = new GranularFlowPipeV2(
+                    new ChannelProtocolWritableImpl(getChannel()));
+        }
+
+        try {
+            ExecuteV2 exec_message = new ExecuteV2(desc_holder.outputFormat(), desc_holder.cardinality(), desc_holder.command());
+            exec_message.setInput_typedesc_id(desc_holder.getInputTypeDescId() == null ? new UUID(0, 0) : desc_holder.getInputTypeDescId());
+            exec_message.setOutput_typedesc_id(desc_holder.getOutputTypeDescId() == null ? new UUID(0, 0) : desc_holder.getOutputTypeDescId());
+            exec_message.setArguments(args_bb);
+            granularFlowPipe.sendExecuteMessageV2(exec_message);
+            return readDataResponse();
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private <T extends ServerProtocolBehaviour> void tryHandleHandshake() throws IOException {
@@ -330,7 +356,7 @@ public class NonBlockingConnection implements IConnection {
         }
     }
 
-    protected <T extends ServerProtocolBehaviour> CommandDataDescriptor readCommandDataDescriptor(IGranularFlowPipe granularFlowPipe, Prepare prepareMessage){
+    protected <T extends ServerProtocolBehaviour> CommandDataDescriptor readCommandDataDescriptor(IGranularFlowPipe granularFlowPipe, Prepare prepareMessage) throws IOException{
         log.debug("Reading prepare complete");
         BufferReader bufferReader = new BufferReaderImpl(clientChannel);
         ByteBuffer readBuffer = SingletonBuffer.getInstance().getBuffer();
@@ -338,8 +364,9 @@ public class NonBlockingConnection implements IConnection {
         CommandDataDescriptor result_cdd = null;
 
         boolean is_finished = false;
+        long start_time = System.currentTimeMillis();
 
-        while (!is_finished) {
+        while (!is_finished && start_time + reading_timeout > System.currentTimeMillis()) {
             if(bufferReader.read(readBuffer) < 0){
                 is_finished = true;
                 connectionLost();
@@ -420,7 +447,7 @@ public class NonBlockingConnection implements IConnection {
         return result_cdd;
     }
 
-    protected <T extends ServerProtocolBehaviour> ResultSet readDataResponse(){
+    protected <T extends ServerProtocolBehaviour> ResultSet readDataResponse() throws IOException{
         log.debug("Reading DataResponse");
         DataResponse dataResponse;
         BufferReader bufferReader = new BufferReaderImpl(getChannel());
@@ -428,8 +455,9 @@ public class NonBlockingConnection implements IConnection {
 
         ResultSet resultSet = new ResultSetImpl();
         boolean is_finished = false;
+        long start_time = System.currentTimeMillis();
 
-        while (!is_finished) {
+        while (!is_finished && start_time + reading_timeout > System.currentTimeMillis()) {
             if(bufferReader.read(readBuffer) < 0){
                 is_finished = true;
                 connectionLost();
