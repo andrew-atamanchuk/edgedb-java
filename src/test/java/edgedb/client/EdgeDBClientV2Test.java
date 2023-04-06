@@ -52,81 +52,6 @@ public class EdgeDBClientV2Test {
         }
     }
 
-
-    @Test
-    public void TestGranularFlow(){
-        EdgeDBClientV2 clientV2 = new EdgeDBClientV2(new BlockingConnection());
-        String query = "select Person {id, name, last_name, profession, birth, age, best_friend}";
-        query = "select Person {name, last_name, best_friend :{name, last_name}, bags :{name, volume, @ownership, @order}}";
-        query = "select Person {name, books, color, number, bags :{name, volume, @ownership}} filter .name = 'Kolia-1'";
-        query = "select Person {name, values, metadata, tuple_of_arrays, nested_tuple, unnamed_tuple} filter .name = 'Kolia-3'";
-
-//        query = "update default::Person \n" +
-//                "filter .name = \"Kolia-3\"\n" +
-//                "set {\n" +
-//                "  values := <range<std::int64>> range(2, 10, inc_lower := true, inc_upper := true)\n" +
-//                "}\n";
-
-        query = "INSERT Bag { name := <str>$name, volume := <int32>$volume }";
-
-        SuperQuery super_query = new SuperQuery();
-        super_query.command = query;
-
-        ConnectionParams cp = new ConnectionParams();
-        cp.setPort(10705);
-
-        try{
-            IConnection connection = clientV2.getConnection(cp);
-            boolean is_json = false;
-
-            ResultSet result = null;
-            if(is_json) {
-                result = connection.queryJSON(query);
-                for(DataResponse resp : ((ResultSetImpl) result).getDataResponses()) {
-                    if (resp != null && resp.getDataLength() > 0) {
-                        for (DataElement elem : resp.getDataElements()) {
-                            log.info("DataElement: " + new String(elem.getDataElement()));
-                        }
-                    }
-                }
-                return;
-            }
-            else{
-                result = connection.query(query);
-            }
-
-            if(result instanceof ResultSetImpl){
-                CommandDataDescriptor cdd = ((ResultSetImpl) result).getCommandDataDescriptor();
-                if(cdd != null) {
-                    super_query.decodeCommandDataDescriptors(cdd);
-                }
-
-                ArrayList<IDataContainer> result_arr = new ArrayList<>();
-                for(DataResponse resp : ((ResultSetImpl) result).getDataResponses()){
-                    if(resp != null && resp.getDataLength() > 0){
-                        for(DataElement elem : resp.getDataElements()){
-                            //log.info("DataElement: " + new String(elem.getDataElement()));
-                            ByteBuffer bb = ByteBuffer.wrap(elem.getDataElement());
-
-                            TypeDescriptor root_desc = super_query.getOutputRootTypeDescriptor();
-                            result_arr.add(root_desc.decodeData(bb, bb.remaining()));
-                        }
-                    }
-                }
-
-                System.out.println("Decoded results:");
-                for (IDataContainer row : result_arr){
-                    if(row.getCountChildren() > 0)
-                        printData(row.getChildrenIterator());
-                    System.out.println();
-                }
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     public void TestParseExecuteV2(){
         EdgeDBClientV2 clientV2 = new EdgeDBClientV2(new NonBlockingConnection());
         String query = "select Person {id, name, last_name, profession, birth, age, best_friend}";
@@ -134,7 +59,7 @@ public class EdgeDBClientV2Test {
         query = "select Person {name, books, color, number, bags :{name, volume, @ownership}} filter .name = 'Kolia-1'";
         query = "select Person {name, values, metadata, tuple_of_arrays, nested_tuple, unnamed_tuple} filter .profession = <str>$param1";
 
-        query = "select Bag {name, volume} filter .volume > <int32>$param1 limit 2262";
+        query = "select Bag {name, volume} filter .volume > <int32>$param1 limit 22";
 
 //        query = "update default::Person \n" +
 //                "filter .name = \"Kolia-3\"\n" +

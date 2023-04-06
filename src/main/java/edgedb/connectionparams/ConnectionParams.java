@@ -16,7 +16,7 @@ public class ConnectionParams {
     private String host="127.0.0.1";
 //localhost:10701
     @NonNull
-    private Integer port=10701;
+    private Integer port=10700;
 
     private String admin;
 
