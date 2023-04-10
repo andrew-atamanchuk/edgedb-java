@@ -80,8 +80,8 @@ public class EdgeDBClientV2Test {
         super_query2.cardinality = Cardinality.ONE;
 
         ConnectionParams cp = new ConnectionParams();
-        cp.setPort(10705);
-        cp.setHost("192.168.1.15");
+        cp.setPort(10700);
+        //cp.setHost("192.168.1.8");
 
         try{
             IConnection connection = clientV2.getConnection(cp);

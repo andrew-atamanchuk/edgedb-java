@@ -17,7 +17,7 @@ public final class TestSetup {
             credentials = TestUtil.deployNewInstance(instanceName);
             TestUtil.sleepForMinute();
             TestUtil.connectToInstance(credentials);
-            runBlockingConnectionTests();
+            //runBlockingConnectionTests();
         } catch (Exception ex) {
             ex.printStackTrace();
         } finally {

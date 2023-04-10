@@ -7,7 +7,6 @@ import edgedb.connection.IConnection;
 import edgedb.connectionparams.ConnectionParams;
 import edgedb.exceptions.EdgeDBIncompatibleDriverException;
 import edgedb.exceptions.EdgeDBInternalErrException;
-import edgedb.functional.blocking.TestRunner;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
